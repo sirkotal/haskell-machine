@@ -9,6 +9,28 @@ data Inst =
   deriving Show
 type Code = [Inst]
 
+module Stack (Stack, push, pop, top, empty, isEmpty) where
+
+data Stack a = Stack [a] deriving (Show)
+
+push :: a -> Stack a -> Stack a
+push x (Stack xs) = Stack (x:xs)
+
+pop :: Stack a -> Stack a
+pop (Stack (_:xs)) = Stack xs
+pop _ = error "Stack.pop: empty stack"
+
+top :: Stack a -> a
+top (Stack (x:_)) = x
+top _ = error "Stack.top: empty stack"
+
+empty :: Stack a
+empty = Stack []
+
+isEmpty :: Stack a -> Bool
+isEmpty (Stack [])= True
+isEmpty (Stack _) = False
+
 -- createEmptyStack :: Stack
 createEmptyStack = undefined -- TODO, Uncomment the function signature after defining Stack
 
