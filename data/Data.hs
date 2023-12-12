@@ -9,36 +9,37 @@ data Inst =
   deriving Show
 type Code = [Inst]
 
-module Stack (Stack, push, pop, top, empty, isEmpty) where
+module Stack (Stack, push, pop, top, isEmpty) where
 
-data Stack a = Stack [a] deriving (Show)
+data Stack = Stack [Int] deriving Show
 
-push :: a -> Stack a -> Stack a
+push :: Int -> Stack -> Stack
 push x (Stack xs) = Stack (x:xs)
 
-pop :: Stack a -> Stack a
+pop :: Stack -> Stack
 pop (Stack (_:xs)) = Stack xs
 pop _ = error "Stack.pop: empty stack"
 
-top :: Stack a -> a
+top :: Stack -> Int
 top (Stack (x:_)) = x
 top _ = error "Stack.top: empty stack"
 
-empty :: Stack a
-empty = Stack []
-
-isEmpty :: Stack a -> Bool
+isEmpty :: Stack -> Bool
 isEmpty (Stack [])= True
 isEmpty (Stack _) = False
 
--- createEmptyStack :: Stack
-createEmptyStack = undefined -- TODO, Uncomment the function signature after defining Stack
+createEmptyStack :: Stack
+createEmptyStack = Stack []
 
 -- stack2Str :: Stack -> String
 stack2Str = undefined -- TODO, Uncomment all the other function type declarations as you implement them
 
--- createEmptyState :: State
-createEmptyState = undefined -- TODO, Uncomment the function signature after defining State
+type Var = String
+type Val = Int
+data State = State [(Var, Val)] deriving Show
+
+createEmptyState :: State s
+createEmptyState :: State []
 
 -- state2Str :: State -> String
 state2Str = undefined -- TODO
