@@ -1,4 +1,5 @@
 -- PFL 2023/24 - Haskell practical assignment quickstart
+import Data.Maybe (fromJust)
 
 -- Part 1
 
@@ -43,6 +44,14 @@ data State = State [(Var, Val)] deriving Show
 
 createEmptyState :: State
 createEmptyState = State []
+
+fetch :: String -> State -> Stack -> Stack
+fetch str (State sta) (Stack stk) = if (lookup str sta) == Nothing
+                      then error "Variable was not found in storage"
+                    else
+                      Stack (push (fromJust(lookup str sta)) (Stack stk))
+
+-- store :: String -> State
 
 -- state2Str :: State -> String
 state2Str = undefined -- TODO
@@ -96,4 +105,4 @@ testParser programCode = (stack2Str stack, state2Str state)
 -- testParser "x := 2; y := (x - 3)*(4 + 2*3); z := x +x*(2);" == ("","x=2,y=-10,z=6")
 -- testParser "i := 10; fact := 1; while (not(i == 1)) do (fact := fact * i; i := i - 1;);" == ("","fact=3628800,i=1")~
 
-main = print(stack2Str (Stack [1,2,3]))
+main = print(fetch "x" (State [("x",3)]) (Stack [1,2]))
