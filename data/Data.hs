@@ -46,10 +46,9 @@ createEmptyState :: State
 createEmptyState = State []
 
 fetch :: String -> State -> Stack -> Stack
-fetch str (State sta) (Stack stk) = if (lookup str sta) == Nothing
-                      then error "Variable was not found in storage"
-                    else
-                      Stack (push (fromJust(lookup str sta)) (Stack stk))
+fetch str (State sta) (Stack stk) = case lookup str sta of
+                                      Nothing -> error "Variable was not found in storage"
+                                      Just val -> push val (Stack stk)
 
 -- store :: String -> State
 

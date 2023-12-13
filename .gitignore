@@ -1,1 +1,4 @@
 *.pdf
+*.hi
+*.o
+Data
