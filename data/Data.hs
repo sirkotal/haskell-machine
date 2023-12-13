@@ -36,7 +36,7 @@ stack2Str s = if isEmpty s
               else if isEmpty (pop s)
                 then show (top s)
               else
-                stack2Str (pop s) ++ "," ++ show (top s)
+                show (top s) ++ "," ++ stack2Str (pop s)
 
 type Var = String
 type Val = Int
@@ -104,4 +104,4 @@ testParser programCode = (stack2Str stack, state2Str state)
 -- testParser "x := 2; y := (x - 3)*(4 + 2*3); z := x +x*(2);" == ("","x=2,y=-10,z=6")
 -- testParser "i := 10; fact := 1; while (not(i == 1)) do (fact := fact * i; i := i - 1;);" == ("","fact=3628800,i=1")~
 
-main = print(fetch "x" (State [("x",3)]) (Stack [1,2]))
+main = print(stack2Str (Stack [1,2,3]))
