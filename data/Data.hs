@@ -46,11 +46,15 @@ createEmptyState :: State
 createEmptyState = State []
 
 fetch :: String -> State -> Stack -> Stack
-fetch str (State sta) (Stack stk) = case lookup str sta of
+fetch str (State sta) stk = case lookup str sta of
                                       Nothing -> error "Variable was not found in storage"
-                                      Just val -> push val (Stack stk)
+                                      Just val -> push val stk
 
--- store :: String -> State
+store :: String -> State -> Stack -> State
+store str (State sta) stk = if isEmpty stk
+                                then error "Stack is empty"
+                            else
+                                State ((str, (top stk)) : sta)
 
 -- state2Str :: State -> String
 state2Str = undefined -- TODO
@@ -104,4 +108,5 @@ testParser programCode = (stack2Str stack, state2Str state)
 -- testParser "x := 2; y := (x - 3)*(4 + 2*3); z := x +x*(2);" == ("","x=2,y=-10,z=6")
 -- testParser "i := 10; fact := 1; while (not(i == 1)) do (fact := fact * i; i := i - 1;);" == ("","fact=3628800,i=1")~
 
-main = print(stack2Str (Stack [1,2,3]))
+-- main = print(fetch "x" (State [("x",3)]) (Stack [1,2]))
+main = print(store "x" (State [("y", 4)]) (Stack [1,2]))
