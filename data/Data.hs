@@ -12,6 +12,17 @@ type Code = [Inst]
 
 data Stack = Stack [Int] deriving Show
 
+type Var = String
+type Val = Int
+data State = State [(Var, Val)] deriving Show
+
+machineInstruction :: Inst -> Stack -> State -> Stack
+machineInstruction (Push n) (Stack stk) sta = Stack (n:stk)
+
+machineInstruction Add (Stack (x:y:stk)) sta = Stack ((x + y) : xs)
+machineInstruction Sub (Stack (x:y:stk)) sta = Stack ((x - y) : xs)
+machineInstruction Mult (Stack (x:y:stk)) sta = Stack ((x * y) : xs)
+
 push :: Int -> Stack -> Stack
 push x (Stack xs) = Stack (x:xs)
 
@@ -37,10 +48,6 @@ stack2Str s = if isEmpty s
                 then show (top s)
               else
                 show (top s) ++ "," ++ stack2Str (pop s)
-
-type Var = String
-type Val = Int
-data State = State [(Var, Val)] deriving Show
 
 createEmptyState :: State
 createEmptyState = State []
