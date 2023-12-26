@@ -73,8 +73,8 @@ state2Str :: State -> String
 state2Str (State sta) =
     intercalate "," (map pairToStr sta)
 
--- run :: (Code, Stack, State) -> (Code, Stack, State)
-run = undefined -- TODO
+run :: (Code, Stack, State) -> (Code, Stack, State)
+run ([], stk, sta) = ([], stk, sta)
 
 -- To help you test your assembler
 testAssembler :: Code -> (String, String)
