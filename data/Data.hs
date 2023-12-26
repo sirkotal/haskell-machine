@@ -22,7 +22,7 @@ valToString Ff = "ff"
 data Stack = Stack [SVal] deriving Show
 
 type Var = String
-type Val = Int
+type Val = SVal
 data State = State [(Var, Val)] deriving Show
 
 push :: SVal -> Stack -> Stack
@@ -53,6 +53,17 @@ stack2Str s = if isEmpty s
 
 createEmptyState :: State
 createEmptyState = State []
+
+fetch :: String -> State -> Stack -> Stack
+fetch str (State sta) stk = case lookup str sta of
+                                      Nothing -> error "Variable was not found in storage"
+                                      Just val -> push val stk
+
+store :: String -> State -> Stack -> State
+store str (State sta) stk = if isEmpty stk
+                                then error "Stack is empty"
+                            else
+                                State ((str, (top stk)) : sta)
 
 -- state2Str :: State -> String
 state2Str = undefined -- TODO
@@ -111,4 +122,7 @@ testParser programCode = (stack2Str stack, state2Str state)
 -- main = print(push Tt (createEmptyStack))
 -- main = print(isEmpty (createEmptyStack))
 -- main = print(stack2Str (Stack [(Integer 1),(Integer 2)]))
-main = print(stack2Str (push Tt (push (Integer 4) createEmptyStack)))
+-- main = print(stack2Str (push Tt (push (Integer 4) createEmptyStack)))
+
+-- main = print(fetch "x" (State [("x",(Integer 3))]) (Stack [(Integer 1),(Integer 2)]))
+main = print(store "x" (State [("y", (Integer 4))]) (Stack [(Integer 1),(Integer 2)]))
