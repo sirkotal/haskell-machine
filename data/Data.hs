@@ -32,14 +32,27 @@ pop :: Stack -> Stack
 pop (Stack (_:xs)) = Stack xs
 pop _ = error "Stack.pop: empty stack"
 
--- createEmptyStack :: Stack
-createEmptyStack = undefined -- TODO, Uncomment the function signature after defining Stack
+top :: Stack -> SVal
+top (Stack (x:_)) = x
+top _ = error "Stack.top: empty stack"
 
--- stack2Str :: Stack -> String
-stack2Str = undefined -- TODO, Uncomment all the other function type declarations as you implement them
+isEmpty :: Stack -> Bool
+isEmpty (Stack [])= True
+isEmpty (Stack _) = False
 
--- createEmptyState :: State
-createEmptyState = undefined -- TODO, Uncomment the function signature after defining State
+createEmptyStack :: Stack
+createEmptyStack = Stack []
+
+stack2Str :: Stack -> String
+stack2Str s = if isEmpty s
+                then ""
+              else if isEmpty (pop s)
+                then show (top s)
+              else
+                show (top s) ++ "," ++ stack2Str (pop s)
+
+createEmptyState :: State
+createEmptyState = State []
 
 -- state2Str :: State -> String
 state2Str = undefined -- TODO
@@ -93,6 +106,9 @@ testParser programCode = (stack2Str stack, state2Str state)
 -- testParser "x := 2; y := (x - 3)*(4 + 2*3); z := x +x*(2);" == ("","x=2,y=-10,z=6")
 -- testParser "i := 10; fact := 1; while (not(i == 1)) do (fact := fact * i; i := i - 1;);" == ("","fact=3628800,i=1")~
 
--- main = print(fetch "x" (State [("x",3)]) (Stack [1,2]))
--- main = print(store "x" (State [("y", 4)]) (Stack [1,2]))
-main = print(push (Integer 3) (pop (Stack [(Integer 1),(Integer 2)])))
+-- main = print(push (Integer 3) (pop (Stack [(Integer 1),(Integer 2)])))
+-- main = print(top (Stack [(Integer 1),(Integer 2)]))
+-- main = print(push Tt (createEmptyStack))
+-- main = print(isEmpty (createEmptyStack))
+-- main = print(stack2Str (Stack [(Integer 1),(Integer 2)]))
+main = print(stack2Str (push Tt (push (Integer 4) createEmptyStack)))
