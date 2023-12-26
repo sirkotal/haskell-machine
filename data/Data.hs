@@ -1,5 +1,6 @@
 -- PFL 2023/24 - Haskell practical assignment quickstart
 import Data.Maybe (fromJust)
+import Data.List (intercalate)
 
 -- Part 1
 
@@ -16,14 +17,17 @@ data SVal = Integer Int
 
 valToString :: SVal -> String
 valToString (Integer x) = show x
-valToString Tt = "tt"
-valToString Ff = "ff"
+valToString Tt = "True"
+valToString Ff = "False"
 
 data Stack = Stack [SVal] deriving Show
 
 type Var = String
 type Val = SVal
 data State = State [(Var, Val)] deriving Show
+
+pairToStr :: (Var, Val) -> String
+pairToStr (var, val) = var ++ "=" ++ valToString val
 
 push :: SVal -> Stack -> Stack
 push x (Stack xs) = Stack (x:xs)
@@ -65,8 +69,9 @@ store str (State sta) stk = if isEmpty stk
                             else
                                 State ((str, (top stk)) : sta)
 
--- state2Str :: State -> String
-state2Str = undefined -- TODO
+state2Str :: State -> String
+state2Str (State sta) =
+    intercalate "," (map pairToStr sta)
 
 -- run :: (Code, Stack, State) -> (Code, Stack, State)
 run = undefined -- TODO
@@ -125,4 +130,5 @@ testParser programCode = (stack2Str stack, state2Str state)
 -- main = print(stack2Str (push Tt (push (Integer 4) createEmptyStack)))
 
 -- main = print(fetch "x" (State [("x",(Integer 3))]) (Stack [(Integer 1),(Integer 2)]))
-main = print(store "x" (State [("y", (Integer 4))]) (Stack [(Integer 1),(Integer 2)]))
+-- main = print(store "x" (State [("y", (Integer 4))]) (Stack [(Integer 1),(Integer 2)]))
+main = print(state2Str (State [("x",(Integer 3)), ("y", (Integer 4)), ("z", Tt)]))
