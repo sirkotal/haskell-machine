@@ -10,58 +10,36 @@ data Inst =
   deriving Show
 type Code = [Inst]
 
-data Stack = Stack [Int] deriving Show
+data SVal = Integer Int
+          | Tt
+          | Ff deriving Show
+
+valToString :: SVal -> String
+valToString (Integer x) = show x
+valToString Tt = "tt"
+valToString Ff = "ff"
+
+data Stack = Stack [SVal] deriving Show
 
 type Var = String
 type Val = Int
 data State = State [(Var, Val)] deriving Show
 
-machineInstruction :: Inst -> Stack -> State -> Stack
-machineInstruction (Push n) (Stack stk) sta = Stack (n:stk)
-
-machineInstruction Add (Stack (x:y:stk)) sta = Stack ((x + y) : xs)
-machineInstruction Sub (Stack (x:y:stk)) sta = Stack ((x - y) : xs)
-machineInstruction Mult (Stack (x:y:stk)) sta = Stack ((x * y) : xs)
-
-push :: Int -> Stack -> Stack
+push :: SVal -> Stack -> Stack
 push x (Stack xs) = Stack (x:xs)
 
 pop :: Stack -> Stack
 pop (Stack (_:xs)) = Stack xs
 pop _ = error "Stack.pop: empty stack"
 
-top :: Stack -> Int
-top (Stack (x:_)) = x
-top _ = error "Stack.top: empty stack"
+-- createEmptyStack :: Stack
+createEmptyStack = undefined -- TODO, Uncomment the function signature after defining Stack
 
-isEmpty :: Stack -> Bool
-isEmpty (Stack [])= True
-isEmpty (Stack _) = False
+-- stack2Str :: Stack -> String
+stack2Str = undefined -- TODO, Uncomment all the other function type declarations as you implement them
 
-createEmptyStack :: Stack
-createEmptyStack = Stack []
-
-stack2Str :: Stack -> String
-stack2Str s = if isEmpty s
-                then ""
-              else if isEmpty (pop s)
-                then show (top s)
-              else
-                show (top s) ++ "," ++ stack2Str (pop s)
-
-createEmptyState :: State
-createEmptyState = State []
-
-fetch :: String -> State -> Stack -> Stack
-fetch str (State sta) stk = case lookup str sta of
-                                      Nothing -> error "Variable was not found in storage"
-                                      Just val -> push val stk
-
-store :: String -> State -> Stack -> State
-store str (State sta) stk = if isEmpty stk
-                                then error "Stack is empty"
-                            else
-                                State ((str, (top stk)) : sta)
+-- createEmptyState :: State
+createEmptyState = undefined -- TODO, Uncomment the function signature after defining State
 
 -- state2Str :: State -> String
 state2Str = undefined -- TODO
@@ -116,4 +94,5 @@ testParser programCode = (stack2Str stack, state2Str state)
 -- testParser "i := 10; fact := 1; while (not(i == 1)) do (fact := fact * i; i := i - 1;);" == ("","fact=3628800,i=1")~
 
 -- main = print(fetch "x" (State [("x",3)]) (Stack [1,2]))
-main = print(store "x" (State [("y", 4)]) (Stack [1,2]))
+-- main = print(store "x" (State [("y", 4)]) (Stack [1,2]))
+main = print(push (Integer 3) (pop (Stack [(Integer 1),(Integer 2)])))
