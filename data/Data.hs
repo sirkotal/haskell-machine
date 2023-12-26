@@ -51,9 +51,9 @@ stack2Str :: Stack -> String
 stack2Str s = if isEmpty s
                 then ""
               else if isEmpty (pop s)
-                then show (top s)
+                then valToString (top s)
               else
-                show (top s) ++ "," ++ stack2Str (pop s)
+                valToString (top s) ++ "," ++ stack2Str (pop s)
 
 createEmptyState :: State
 createEmptyState = State []
@@ -127,8 +127,8 @@ testParser programCode = (stack2Str stack, state2Str state)
 -- main = print(push Tt (createEmptyStack))
 -- main = print(isEmpty (createEmptyStack))
 -- main = print(stack2Str (Stack [(Integer 1),(Integer 2)]))
--- main = print(stack2Str (push Tt (push (Integer 4) createEmptyStack)))
+main = print(stack2Str (push Tt (push (Integer 4) createEmptyStack)))
 
 -- main = print(fetch "x" (State [("x",(Integer 3))]) (Stack [(Integer 1),(Integer 2)]))
 -- main = print(store "x" (State [("y", (Integer 4))]) (Stack [(Integer 1),(Integer 2)]))
-main = print(state2Str (State [("x",(Integer 3)), ("y", (Integer 4)), ("z", Tt)]))
+-- main = print(state2Str (State [("x",(Integer 3)), ("y", (Integer 4)), ("z", Tt)]))
