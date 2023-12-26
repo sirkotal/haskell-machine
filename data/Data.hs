@@ -40,6 +40,18 @@ top :: Stack -> SVal
 top (Stack (x:_)) = x
 top _ = error "Stack.top: empty stack"
 
+add :: Stack -> Stack
+add (Stack (Integer x : Integer y : xs)) = push (Integer (x + y)) (pop (pop (Stack (Integer x : Integer y : xs))))
+add _ = error "Stack.add: need two integers at the top of the stack"
+
+sub :: Stack -> Stack
+sub (Stack (Integer x : Integer y : xs)) = push (Integer (x - y)) (pop (pop (Stack (Integer x : Integer y : xs))))
+sub _ = error "Stack.sub: need two integers at the top of the stack"
+
+mul :: Stack -> Stack
+mul (Stack (Integer x : Integer y : xs)) = push (Integer (x * y)) (pop (pop (Stack (Integer x : Integer y : xs))))
+mul _ = error "Stack.mul: need two integers at the top of the stack"
+
 isEmpty :: Stack -> Bool
 isEmpty (Stack [])= True
 isEmpty (Stack _) = False
@@ -127,7 +139,9 @@ testParser programCode = (stack2Str stack, state2Str state)
 -- main = print(push Tt (createEmptyStack))
 -- main = print(isEmpty (createEmptyStack))
 -- main = print(stack2Str (Stack [(Integer 1),(Integer 2)]))
-main = print(stack2Str (push Tt (push (Integer 4) createEmptyStack)))
+-- main = print(stack2Str (push Tt (push (Integer 4) createEmptyStack)))
+
+main = print(sub (push (Integer 5) (push (Integer 4) createEmptyStack)))
 
 -- main = print(fetch "x" (State [("x",(Integer 3))]) (Stack [(Integer 1),(Integer 2)]))
 -- main = print(store "x" (State [("y", (Integer 4))]) (Stack [(Integer 1),(Integer 2)]))
