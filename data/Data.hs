@@ -52,6 +52,18 @@ mul :: Stack -> Stack
 mul (Stack (Integer x : Integer y : xs)) = push (Integer (x * y)) (pop (pop (Stack (Integer x : Integer y : xs))))
 mul _ = error "Stack.mul: need two integers at the top of the stack"
 
+and :: Stack -> Stack
+and (Stack (x : y : xs)) = case (valToString x, valToString y) of
+                                      ("True", "True") -> push Tt (pop (pop (Stack (x : y : xs))))
+                                      _ -> push Ff (pop (pop (Stack (x : y : xs))))
+and _ = error "Stack.and: need two booleans at the top of the stack"
+
+neg :: Stack -> Stack
+neg (Stack (x : xs)) = case valToString x of
+                                      ("True") -> push Ff (pop (Stack (x : xs)))
+                                      ("False") -> push Tt (pop (Stack (x : xs)))
+neg _ = error "Stack.neg: need two booleans at the top of the stack"
+
 isEmpty :: Stack -> Bool
 isEmpty (Stack [])= True
 isEmpty (Stack _) = False
@@ -141,7 +153,9 @@ testParser programCode = (stack2Str stack, state2Str state)
 -- main = print(stack2Str (Stack [(Integer 1),(Integer 2)]))
 -- main = print(stack2Str (push Tt (push (Integer 4) createEmptyStack)))
 
-main = print(sub (push (Integer 5) (push (Integer 4) createEmptyStack)))
+-- main = print(sub (push (Integer 5) (push (Integer 4) createEmptyStack)))
+-- main = print(Main.and (push Tt (push Ff createEmptyStack)))
+main = print(neg (push Ff (push Ff createEmptyStack)))
 
 -- main = print(fetch "x" (State [("x",(Integer 3))]) (Stack [(Integer 1),(Integer 2)]))
 -- main = print(store "x" (State [("y", (Integer 4))]) (Stack [(Integer 1),(Integer 2)]))
