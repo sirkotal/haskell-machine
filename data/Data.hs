@@ -64,7 +64,7 @@ neg :: Stack -> Stack
 neg (Stack (x : xs)) = case valToString x of
                                       ("True") -> push Ff (pop (Stack (x : xs)))
                                       ("False") -> push Tt (pop (Stack (x : xs)))
-                                       _ -> error "Stack.neg: need two booleans at the top of the stack"
+                                       _ -> error "Stack.neg: need a boolean at the top of the stack"
 
 eq :: Stack -> Stack
 eq (Stack (x : y : xs)) = case (x, y) of
