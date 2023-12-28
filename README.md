@@ -17,3 +17,4 @@
 - <https://hoogle.haskell.org/>
 - <https://typeclasses.com/>
 - <https://en.wikibooks.org/wiki/Haskell>
+- <https://www.haskelltutorials.com/guides/haskell-lists-ultimate-guide.html>
