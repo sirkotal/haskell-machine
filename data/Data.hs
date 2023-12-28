@@ -1,6 +1,7 @@
 -- PFL 2023/24 - Haskell practical assignment quickstart
 import Data.Maybe (fromJust)
-import Data.List (intercalate)
+import Data.List (intercalate, sortBy)
+import Data.Ord (comparing)
 
 -- Part 1
 
@@ -25,9 +26,6 @@ data Stack = Stack [SVal] deriving Show
 type Var = String
 type Val = SVal
 data State = State [(Var, Val)] deriving Show
-
-pairToStr :: (Var, Val) -> String
-pairToStr (var, val) = var ++ "=" ++ valToString val
 
 push :: SVal -> Stack -> Stack
 push x (Stack xs) = Stack (x:xs)
@@ -107,15 +105,18 @@ fetch str (State sta) stk = case lookup str sta of
                                       Nothing -> error "Variable was not found in storage"
                                       Just val -> push val stk
 
-store :: String -> State -> Stack -> State
+store :: String -> State -> Stack -> (Stack, State)
 store str (State sta) stk = if isEmpty stk
                                 then error "Stack is empty"
                             else
-                                State ((str, (top stk)) : sta)
+                                (pop stk, State ((str, (top stk)) : sta))
+
+pairToStr :: (Var, Val) -> String
+pairToStr (var, val) = var ++ "=" ++ valToString val
 
 state2Str :: State -> String
-state2Str (State sta) =
-    intercalate "," (map pairToStr sta)
+state2Str (State sta) = let sorted = sortBy (comparing fst) sta in 
+                        intercalate "," (map pairToStr sorted)
 
 execute :: Inst -> Stack -> State -> (Stack, State)
 execute (Push n) stk sta = (push (Integer n) stk, sta)
@@ -129,7 +130,7 @@ execute Le stk sta = (le stk, sta)
 execute And stk sta = (Main.and stk, sta)
 execute Neg stk sta = (neg stk, sta) 
 execute (Fetch s) stk sta = ((fetch s sta stk), sta) 
--- execute (Store s) stk sta = (push Ff stk, sta) -> need to check this, should probably return a (Stack, State) pair
+execute (Store s) stk sta = store s sta stk
 execute Noop stk sta = (stk, sta) 
 
 run :: (Code, Stack, State) -> (Code, Stack, State)
@@ -201,4 +202,12 @@ testParser programCode = (stack2Str stack, state2Str state)
 -- main = print(state2Str (State [("x",(Integer 3)), ("y", (Integer 4)), ("z", Tt)]))
 
 -- main = print(run ([Push 10, Push 4, Push 3, Sub, Mult], createEmptyStack, createEmptyState))
-main = print (testAssembler [Push 10,Push 4,Push 3,Sub,Mult])
+
+-- main = print (testAssembler [Push 10,Push 4,Push 3,Sub,Mult] == ("-10",""))
+-- main = print(testAssembler [Fals,Push 3,Tru,Store "var",Store "a", Store "someVar"] == ("","a=3,someVar=False,var=True"))
+-- main = print(testAssembler [Fals,Store "var",Fetch "var"] == ("False","var=False"))
+-- main = print(testAssembler [Push (-20),Tru,Fals] == ("False,True,-20",""))
+-- main = print(testAssembler [Push (-20),Tru,Tru,Neg] == ("False,True,-20",""))
+-- main = print(testAssembler [Push (-20),Tru,Tru,Neg,Equ] == ("False,-20",""))
+-- main = print(testAssembler [Push (-20),Push (-21), Le] == ("True",""))
+main = print(testAssembler [Push 5,Store "x",Push 1,Fetch "x",Sub,Store "x"])
