@@ -2,12 +2,13 @@
 import Data.Maybe (fromJust)
 import Data.List (intercalate, sortBy)
 import Data.Ord (comparing)
+import Data.Map (insert, fromList, toList)
 
 -- Part 1
 
 -- Do not modify our definition of Inst and Code
 data Inst =
-  Push Integer | Add | Mult | Sub | Tru | Fals | Equ | Le | And | Neg | Fetch String | Store String | Noop | -- check this later (Integer, not Int)
+  Push Integer | Add | Mult | Sub | Tru | Fals | Equ | Le | And | Neg | Fetch String | Store String | Noop |
   Branch Code Code | Loop Code Code
   deriving Show
 type Code = [Inst]
@@ -109,7 +110,7 @@ store :: String -> State -> Stack -> (Stack, State)
 store str (State sta) stk = if isEmpty stk
                                 then error "Stack is empty"
                             else
-                                (pop stk, State ((str, (top stk)) : sta))
+                                (pop stk, State (toList (insert str (top stk) (fromList sta))))
 
 pairToStr :: (Var, Val) -> String
 pairToStr (var, val) = var ++ "=" ++ valToString val
@@ -210,4 +211,4 @@ testParser programCode = (stack2Str stack, state2Str state)
 -- main = print(testAssembler [Push (-20),Tru,Tru,Neg] == ("False,True,-20",""))
 -- main = print(testAssembler [Push (-20),Tru,Tru,Neg,Equ] == ("False,-20",""))
 -- main = print(testAssembler [Push (-20),Push (-21), Le] == ("True",""))
-main = print(testAssembler [Push 5,Store "x",Push 1,Fetch "x",Sub,Store "x"])
+main = print(testAssembler [Push 5,Store "x",Push 1,Fetch "x",Sub,Store "x"] == ("","x=4"))
