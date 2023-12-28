@@ -124,6 +124,13 @@ execute Mult stk sta = (mul stk, sta)
 execute Sub stk sta = (sub stk, sta) 
 execute Tru stk sta = (push Tt stk, sta) 
 execute Fals stk sta = (push Ff stk, sta) 
+execute Equ stk sta = (eq stk, sta) 
+execute Le stk sta = (le stk, sta) 
+execute And stk sta = (and stk, sta)
+execute Neg stk sta = (neg stk, sta) 
+execute (Fetch s) stk sta = ((fetch s sta stk), sta) 
+-- execute (Store s) stk sta = (push Ff stk, sta) -> need to check this, should probably return a (Stack, State) pair
+execute Noop stk sta = (stk, sta) 
 
 run :: (Code, Stack, State) -> (Code, Stack, State)
 run ([], stk, sta) = ([], stk, sta)
