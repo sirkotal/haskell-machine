@@ -136,7 +136,15 @@ execute Noop stk sta = (stk, sta)
 
 run :: (Code, Stack, State) -> (Code, Stack, State)
 run ([], stk, sta) = ([], stk, sta)
-run (inst : rest, stk, sta) = let (new_stk, new_sta) = execute inst stk sta in run (rest, new_stk, new_sta)
+run (inst : rest, stk, sta) = case inst of
+                                Branch c1 c2 -> if (valToString (top stk)) == "True"
+                                                    then run (c1 ++ rest, (pop stk), sta)
+                                                else if (valToString (top stk)) == "False"
+                                                    then run (c2 ++ rest, (pop stk), sta)
+                                                else
+                                                    run (rest, stk, sta)
+                                Loop c1 c2 -> run (c1 ++ [Branch (c2 ++ [Loop c1 c2]) [Noop]] ++ rest, stk, sta)
+                                _ -> let (new_stk, new_sta) = execute inst stk sta in run (rest, new_stk, new_sta)
 
 -- To help you test your assembler
 testAssembler :: Code -> (String, String)
@@ -211,4 +219,6 @@ testParser programCode = (stack2Str stack, state2Str state)
 -- main = print(testAssembler [Push (-20),Tru,Tru,Neg] == ("False,True,-20",""))
 -- main = print(testAssembler [Push (-20),Tru,Tru,Neg,Equ] == ("False,-20",""))
 -- main = print(testAssembler [Push (-20),Push (-21), Le] == ("True",""))
-main = print(testAssembler [Push 5,Store "x",Push 1,Fetch "x",Sub,Store "x"] == ("","x=4"))
+-- main = print(testAssembler [Push 5,Store "x",Push 1,Fetch "x",Sub,Store "x"] == ("","x=4"))
+
+main = print(testAssembler [Push 10,Store "i",Push 1,Store "fact",Loop [Push 1,Fetch "i",Equ,Neg] [Fetch "i",Fetch "fact",Mult,Store "fact",Push 1,Fetch "i",Sub,Store "i"]] == ("","fact=3628800,i=1"))
