@@ -6,12 +6,12 @@ import Data.List (intercalate)
 
 -- Do not modify our definition of Inst and Code
 data Inst =
-  Push Integer | Add | Mult | Sub | Tru | Fals | Equ | Le | And | Neg | Fetch String | Store String | Noop |
+  Push Integer | Add | Mult | Sub | Tru | Fals | Equ | Le | And | Neg | Fetch String | Store String | Noop | -- check this later (Integer, not Int)
   Branch Code Code | Loop Code Code
   deriving Show
 type Code = [Inst]
 
-data SVal = Integer Int
+data SVal = Integer Integer
           | Tt
           | Ff deriving Show
 
@@ -193,4 +193,5 @@ testParser programCode = (stack2Str stack, state2Str state)
 -- main = print(store "x" (State [("y", (Integer 4))]) (Stack [(Integer 1),(Integer 2)]))
 -- main = print(state2Str (State [("x",(Integer 3)), ("y", (Integer 4)), ("z", Tt)]))
 
-main = print(run ([Push 10, Push 4, Push 3, Sub, Mult], createEmptyStack, createEmptyState))
+-- main = print(run ([Push 10, Push 4, Push 3, Sub, Mult], createEmptyStack, createEmptyState))
+main = print (testAssembler [Push 10,Push 4,Push 3,Sub,Mult])
