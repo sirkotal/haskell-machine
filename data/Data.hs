@@ -54,17 +54,17 @@ mul _ = error "Stack.mul: need two integers at the top of the stack"
 
 and :: Stack -> Stack
 and (Stack (x : y : xs)) = case (valToString x, valToString y) of
-                                      ("True", "True") -> push Tt (pop (pop (Stack (x : y : xs))))
-                                      ("True", "False") -> push Ff (pop (pop (Stack (x : y : xs))))
-                                      ("False", "True") -> push Ff (pop (pop (Stack (x : y : xs))))
-                                      ("False", "False") -> push Ff (pop (pop (Stack (x : y : xs))))
-                                       _ -> error "Stack.and: need two booleans at the top of the stack"
+                                    ("True", "True") -> push Tt (pop (pop (Stack (x : y : xs))))
+                                    ("True", "False") -> push Ff (pop (pop (Stack (x : y : xs))))
+                                    ("False", "True") -> push Ff (pop (pop (Stack (x : y : xs))))
+                                    ("False", "False") -> push Ff (pop (pop (Stack (x : y : xs))))
+                                    _ -> error "Stack.and: need two booleans at the top of the stack"
 
 neg :: Stack -> Stack
 neg (Stack (x : xs)) = case valToString x of
-                                      ("True") -> push Ff (pop (Stack (x : xs)))
-                                      ("False") -> push Tt (pop (Stack (x : xs)))
-                                       _ -> error "Stack.neg: need a boolean at the top of the stack"
+                                    ("True") -> push Ff (pop (Stack (x : xs)))
+                                    ("False") -> push Tt (pop (Stack (x : xs)))
+                                    _ -> error "Stack.neg: need a boolean at the top of the stack"
 
 eq :: Stack -> Stack
 eq (Stack (x : y : xs)) = case (x, y) of
@@ -117,8 +117,17 @@ state2Str :: State -> String
 state2Str (State sta) =
     intercalate "," (map pairToStr sta)
 
+execute :: Inst -> Stack -> State -> (Stack, State)
+execute (Push n) stk sta = (push (Integer n) stk, sta)
+execute Add stk sta = (add stk, sta) 
+execute Mult stk sta = (mul stk, sta)
+execute Sub stk sta = (sub stk, sta) 
+execute Tru stk sta = (push Tt stk, sta) 
+execute Fals stk sta = (push Ff stk, sta) 
+
 run :: (Code, Stack, State) -> (Code, Stack, State)
 run ([], stk, sta) = ([], stk, sta)
+run (inst : rest, stk, sta) = let (new_stk, new_sta) = execute inst stk sta in run (rest, new_stk, new_sta)
 
 -- To help you test your assembler
 testAssembler :: Code -> (String, String)
@@ -177,9 +186,11 @@ testParser programCode = (stack2Str stack, state2Str state)
 -- main = print(Main.and (push Tt (push Ff createEmptyStack)))
 -- main = print(neg (push Ff (push Ff createEmptyStack)))
 
-main = print(eq (push Tt (push (Integer 4) createEmptyStack)))
+-- main = print(eq (push Tt (push (Integer 4) createEmptyStack)))
 -- main = print(le (push (Integer 5) (push (Integer 4) createEmptyStack)))
 
 -- main = print(fetch "x" (State [("x",(Integer 3))]) (Stack [(Integer 1),(Integer 2)]))
 -- main = print(store "x" (State [("y", (Integer 4))]) (Stack [(Integer 1),(Integer 2)]))
 -- main = print(state2Str (State [("x",(Integer 3)), ("y", (Integer 4)), ("z", Tt)]))
+
+main = print(run ([Push 10, Push 4, Push 3, Sub, Mult], createEmptyStack, createEmptyState))
