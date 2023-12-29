@@ -162,6 +162,13 @@ testAssembler code = (stack2Str stack, state2Str state)
 -- testAssembler [Push 5,Store "x",Push 1,Fetch "x",Sub,Store "x"] == ("","x=4")
 -- testAssembler [Push 10,Store "i",Push 1,Store "fact",Loop [Push 1,Fetch "i",Equ,Neg] [Fetch "i",Fetch "fact",Mult,Store "fact",Push 1,Fetch "i",Sub,Store "i"]] == ("","fact=3628800,i=1")
 
+-- If you test:
+-- testAssembler [Push 1,Push 2,And]
+-- You should get an exception with the string: "Run-time error"
+-- If you test:
+-- testAssembler [Tru,Tru,Store "y", Fetch "x",Tru]
+-- You should get an exception with the string: "Run-time error"
+
 -- Part 2
 
 -- TODO: Define the types Aexp, Bexp, Stm and Program
@@ -192,6 +199,8 @@ testParser programCode = (stack2Str stack, state2Str state)
 -- testParser "x := 2; y := (x - 3)*(4 + 2*3); z := x +x*(2);" == ("","x=2,y=-10,z=6")
 -- testParser "i := 10; fact := 1; while (not(i == 1)) do (fact := fact * i; i := i - 1;);" == ("","fact=3628800,i=1")~
 
+
+
 -- main = print(push (Integer 3) (pop (Stack [(Integer 1),(Integer 2)])))
 -- main = print(top (Stack [(Integer 1),(Integer 2)]))
 -- main = print(push Tt (createEmptyStack))
@@ -220,5 +229,6 @@ testParser programCode = (stack2Str stack, state2Str state)
 -- main = print(testAssembler [Push (-20),Tru,Tru,Neg,Equ] == ("False,-20",""))
 -- main = print(testAssembler [Push (-20),Push (-21), Le] == ("True",""))
 -- main = print(testAssembler [Push 5,Store "x",Push 1,Fetch "x",Sub,Store "x"] == ("","x=4"))
+--main = print(testAssembler [Push 10,Store "i",Push 1,Store "fact",Loop [Push 1,Fetch "i",Equ,Neg] [Fetch "i",Fetch "fact",Mult,Store "fact",Push 1,Fetch "i",Sub,Store "i"]] == ("","fact=3628800,i=1"))
 
-main = print(testAssembler [Push 10,Store "i",Push 1,Store "fact",Loop [Push 1,Fetch "i",Equ,Neg] [Fetch "i",Fetch "fact",Mult,Store "fact",Push 1,Fetch "i",Sub,Store "i"]] == ("","fact=3628800,i=1"))
+main = print(testAssembler [Push 1,Push 2,And])
