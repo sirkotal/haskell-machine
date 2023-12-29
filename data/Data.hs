@@ -173,7 +173,8 @@ testAssembler code = (stack2Str stack, state2Str state)
 
 -- TODO: Define the types Aexp, Bexp, Stm and Program
 
-data Aexp = Num Integer              
+data Aexp = Num Integer    
+            | Var String          
             | Sum Aexp Aexp         
             | Subt Aexp Aexp           
             | Mul Aexp Aexp deriving Show
@@ -194,6 +195,7 @@ type Program = [Stm]
 
 compA :: Aexp -> Code
 compA (Num n) = [Push n]
+compA (Var x) = [Fetch x]
 compA (Sum x y) = compA x ++ compA y ++ [Add]  
 compA (Subt x y) = compA x ++ compA y ++ [Sub] 
 compA (Mul x y) = compA x ++ compA y ++ [Mult] 
