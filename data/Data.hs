@@ -211,7 +211,7 @@ compB (Not v) = compB v ++ [Neg]
 
 compile :: Program -> Code
 compile [] = []
-compile (stm:stmts) = compileStm stm ++ compile stmts  -- TODO
+compile (Assign var expr:stmts) = compA expr ++ [Store var] ++ compile stmts  -- temporary just for arithmetic
 
 -- parse :: String -> Program
 parse = undefined -- TODO
@@ -262,4 +262,6 @@ testParser programCode = (stack2Str stack, state2Str state)
 -- main = print(testAssembler [Push 5,Store "x",Push 1,Fetch "x",Sub,Store "x"] == ("","x=4"))
 --main = print(testAssembler [Push 10,Store "i",Push 1,Store "fact",Loop [Push 1,Fetch "i",Equ,Neg] [Fetch "i",Fetch "fact",Mult,Store "fact",Push 1,Fetch "i",Sub,Store "i"]] == ("","fact=3628800,i=1"))
 
-main = print(testAssembler [Push 1,Push 2,And])
+-- main = print(testAssembler [Push 1,Push 2,And])
+
+main = print(run ((compile [Assign "x" (Sum (Num 2) (Subt (Num 2) (Mul (Num 2) (Num 2))))]), createEmptyStack, createEmptyState))
