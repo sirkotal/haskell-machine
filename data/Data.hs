@@ -200,10 +200,13 @@ compA (Sum x y) = compA x ++ compA y ++ [Add]
 compA (Subt x y) = compA x ++ compA y ++ [Sub] 
 compA (Mul x y) = compA x ++ compA y ++ [Mult] 
 
-compB :: Bexp -> Code    -- missing Equal for booleans and And || should LeEq be in compA (depends on what they mean with "boolean expressions")
+compB :: Bexp -> Code   
 compB (BoolVal True) = [Tru] 
 compB (BoolVal False) = [Fals] 
+compB (Equal x y) = compA x ++ compA y ++ [Equ]
+compB (Equi x y) = compB x ++ compB y ++ [Equ]
 compB (LeEq x y) = compA x ++ compA y ++ [Le]
+compB (LogAnd x y) = compB x ++ compB y ++ [And]
 compB (Not v) = compB v ++ [Neg]
 
 compile :: Program -> Code
