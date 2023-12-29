@@ -179,9 +179,9 @@ data Aexp = Num Integer
             | Mul Aexp Aexp deriving Show
 
 data Bexp = BoolVal Bool          
-            | Equal Aexp Aexp      
-            | LeEq Aexp Aexp
-            | LeEqBool Bexp Bexp          
+            | Equal Aexp Aexp    
+            | Equi Bexp Bexp  -- Equal for Booleans maybe?
+            | LeEq Aexp Aexp        
             | LogAnd Bexp Bexp 
             | Not Bexp deriving Show
 
@@ -198,8 +198,11 @@ compA (Sum x y) = compA x ++ compA y ++ [Add]
 compA (Subt x y) = compA x ++ compA y ++ [Sub] 
 compA (Mul x y) = compA x ++ compA y ++ [Mult] 
 
--- compB :: Bexp -> Code
-compB = undefined -- TODO
+compB :: Bexp -> Code    -- missing Equal for booleans and And || should LeEq be in compA (depends on what they mean with "boolean expressions")
+compB (BoolVal True) = [Tru] 
+compB (BoolVal False) = [Fals] 
+compB (LeEq x y) = compA x ++ compA y ++ [Le]
+compB (Not v) = compB v ++ [Neg]
 
 compile :: Program -> Code
 compile [] = []
