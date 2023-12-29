@@ -180,7 +180,8 @@ data Aexp = Num Integer
 
 data Bexp = BoolVal Bool          
             | Equal Aexp Aexp      
-            | LeEq Aexp Aexp          
+            | LeEq Aexp Aexp
+            | LeEqBool Bexp Bexp          
             | LogAnd Bexp Bexp 
             | Not Bexp deriving Show
 
@@ -189,14 +190,20 @@ data Stm = Assign String Aexp
             | If Bexp Stm Stm            
             | While Bexp Stm deriving Show
 
--- compA :: Aexp -> Code
-compA = undefined -- TODO
+type Program = [Stm]
+
+compA :: Aexp -> Code
+compA (Num n) = [Push n]
+compA (Sum x y) = compA x ++ compA y ++ [Add]  
+compA (Subt x y) = compA x ++ compA y ++ [Sub] 
+compA (Mul x y) = compA x ++ compA y ++ [Mult] 
 
 -- compB :: Bexp -> Code
 compB = undefined -- TODO
 
--- compile :: Program -> Code
-compile = undefined -- TODO
+compile :: Program -> Code
+compile [] = []
+compile (stm:stmts) = compileStm stm ++ compile stmts  -- TODO
 
 -- parse :: String -> Program
 parse = undefined -- TODO
