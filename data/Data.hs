@@ -173,6 +173,17 @@ testAssembler code = (stack2Str stack, state2Str state)
 
 -- TODO: Define the types Aexp, Bexp, Stm and Program
 
+data Aexp = Num Integer              
+            | Sum Aexp Aexp         
+            | Subt Aexp Aexp           
+            | Mul Aexp Aexp deriving Show
+
+data Bexp = BoolVal Bool          
+    | Equal Aexp Aexp      
+    | LeEq Aexp Aexp          
+    | LogAnd Bexp Bexp 
+    | Not Bexp deriving Show
+
 -- compA :: Aexp -> Code
 compA = undefined -- TODO
 
