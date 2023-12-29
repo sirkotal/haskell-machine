@@ -179,10 +179,15 @@ data Aexp = Num Integer
             | Mul Aexp Aexp deriving Show
 
 data Bexp = BoolVal Bool          
-    | Equal Aexp Aexp      
-    | LeEq Aexp Aexp          
-    | LogAnd Bexp Bexp 
-    | Not Bexp deriving Show
+            | Equal Aexp Aexp      
+            | LeEq Aexp Aexp          
+            | LogAnd Bexp Bexp 
+            | Not Bexp deriving Show
+
+data Stm = Assign String Aexp          
+            | Seq Stm Stm                
+            | If Bexp Stm Stm            
+            | While Bexp Stm deriving Show
 
 -- compA :: Aexp -> Code
 compA = undefined -- TODO
