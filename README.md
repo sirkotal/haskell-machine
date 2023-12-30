@@ -106,6 +106,43 @@ state2Str (State sta) = let sorted = sortBy (comparing fst) sta in
 ```
 
 Finally, we created an auxiliary function ```execute```, which receives an instruction (```Inst```), a stack and a state as arguments and returns a ```(Stack, State)``` pair, to help us implement the ```run``` function. We took advantage of the implementation of ```execute``` to implement the ```Noop``` instruction, since it is only a dummy meant to return the input stack and store.
+
+Then, we implemented the ```run``` function, which receives a ```(Code, Stack, State)``` tuple (where ```type Code = [Inst]```) as an argument and returns a tuple of the same structure; it is responsible for running the machine (interpreting the code received and executing it).
+We also took advantage of the function's implementation to implement the ```Branch Code Code``` and ```Loop Code Code``` instructions directly into the definition of ```run```.
+
+```haskell
+execute :: Inst -> Stack -> State -> (Stack, State)
+execute (Push n) stk sta = (push (Integer n) stk, sta)
+execute Add stk sta = (add stk, sta) 
+execute Mult stk sta = (mul stk, sta)
+execute Sub stk sta = (sub stk, sta) 
+execute Tru stk sta = (push Tt stk, sta) 
+execute Fals stk sta = (push Ff stk, sta) 
+execute Equ stk sta = (eq stk, sta) 
+execute Le stk sta = (le stk, sta) 
+execute And stk sta = (Main.and stk, sta)
+execute Neg stk sta = (neg stk, sta) 
+execute (Fetch s) stk sta = ((fetch s sta stk), sta) 
+execute (Store s) stk sta = store s sta stk
+execute Noop stk sta = (stk, sta) 
+
+run :: (Code, Stack, State) -> (Code, Stack, State)
+run ([], stk, sta) = ([], stk, sta)
+run (inst : rest, stk, sta) = case inst of
+                                Branch c1 c2 -> if (valToString (top stk)) == "True"
+                                                    then run (c1 ++ rest, (pop stk), sta)
+                                                else if (valToString (top stk)) == "False"
+                                                    then run (c2 ++ rest, (pop stk), sta)
+                                                else
+                                                    run (rest, stk, sta)
+                                Loop c1 c2 -> run (c1 ++ [Branch (c2 ++ [Loop c1 c2]) [Noop]] ++ rest, stk, sta)
+                                _ -> let (new_stk, new_sta) = execute inst stk sta in run (rest, new_stk, new_sta)
+```
+
+### Part 2
+
+The second part of the project consisted in defining a translation (a compiler) from a small imperative programming language (with arithmetic and boolean expressions, statements consisting of assignments of the form ```x := a```, sequences of statements ```(instr1 ; instr2)```, ```if...then...else``` statements and ```while``` loops) into lists of instructions in the previous machine.
+
 ## Conclusions
 
 
