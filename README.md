@@ -60,7 +60,30 @@ isEmpty (Stack _) = False
 ```
 
 The next step was to implement all remaining instructions that relied solely on the evaluation stack (```Add, Mult, Sub, Equ, Le, And, Neg```), alongside the ```createEmptyStack``` and ```stack2Str``` functions.
-We created seven different functions (one for each of the instructions listed above) that take a stack as an argument and return an updated stack, based on their respective operations.
+We created seven different functions (one for each of the instructions listed above) that take a stack as an argument and return an updated stack, based on their respective operations. We also developed a ```valToString``` auxiliary function that returns a stack value in string format.
+Afterwards, we implemented the ```createEmptyStack``` and the ```stack2Str``` functions, the latter of which is a recursive function that translates the contents of the stack into a string; it handles three different situations:
+
+1. ***The stack is empty*** → The function returns an empty string, indicating that the stack has no elements left.
+2. ***The stack has one element*** → If the stack only has one element left (becomes empty after popping an element), the function converts the value of the top element to a string.
+3. ***Any other case*** → The function converts the value of the top element to a string and appends a comma to it; it is then recursively called to process the rest of the stack elements. The string returned by ```stack2Str``` is the concatenation of the string representation of the top element the stack, a comma, and the string representation of the rest of the elements in the stack.
+
+```haskell
+valToString :: SVal -> String
+valToString (Integer x) = show x
+valToString Tt = "True"
+valToString Ff = "False"
+
+createEmptyStack :: Stack
+createEmptyStack = Stack []
+
+stack2Str :: Stack -> String
+stack2Str s = if isEmpty s
+                then ""
+              else if isEmpty (pop s)
+                then valToString (top s)
+              else
+                valToString (top s) ++ "," ++ stack2Str (pop s)
+```
 
 ## Conclusions
 
