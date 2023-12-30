@@ -3,6 +3,7 @@ import Data.Maybe (fromJust)
 import Data.List (intercalate, sortBy)
 import Data.Ord (comparing)
 import Data.Map (insert, fromList, toList)
+import Control.Exception (Exception, throwIO)
 
 -- Part 1
 
@@ -211,7 +212,10 @@ compB (Not v) = compB v ++ [Neg]
 
 compile :: Program -> Code
 compile [] = []
-compile (Assign var expr:stmts) = compA expr ++ [Store var] ++ compile stmts  -- temporary just for arithmetic
+compile (Assign var expr : stmts) = compA expr ++ [Store var] ++ compile stmts  -- compA temporary just for arithmetic
+compile (Seq s : stmts) = compile s ++ compile stmts
+compile (If a b c : stmts) = compB a ++ [Branch (compile b) (compile c)] ++ compile stmts
+compile (While a b : stmts) = [Loop (compB a) (compile b)] ++ compile stmts
 
 -- parse :: String -> Program
 parse = undefined -- TODO
