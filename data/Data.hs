@@ -196,9 +196,9 @@ type Program = [Stm]
 compA :: Aexp -> Code
 compA (Num n) = [Push n]
 compA (Var x) = [Fetch x]
-compA (Sum x y) = compA x ++ compA y ++ [Add]  
-compA (Subt x y) = compA x ++ compA y ++ [Sub] 
-compA (Mul x y) = compA x ++ compA y ++ [Mult] 
+compA (Sum x y) = compA y ++ compA x ++ [Add]  
+compA (Subt x y) = compA y ++ compA x ++ [Sub] 
+compA (Mul x y) = compA y ++ compA x ++ [Mult] 
 
 compB :: Bexp -> Code   
 compB (BoolVal True) = [Tru] 
@@ -211,7 +211,13 @@ compB (Not v) = compB v ++ [Neg]
 
 compile :: Program -> Code
 compile [] = []
-compile (Assign var expr:stmts) = compA expr ++ [Store var] ++ compile stmts  -- temporary just for arithmetic
+compile ((Assign var expr):stmts) = compA expr ++ [Store var] ++ compile stmts
+compile ((Seq stm1 stm2):stmts) = compile [stm1] ++ compile [stm2]
+compile ((If cond thenBody elseBody):stmts) = compB cond ++ compA thenBody ++ compB elseBody
+compile ((While cond body)) = compB cond ++ compA body
+
+
+
 
 -- parse :: String -> Program
 parse = undefined -- TODO
@@ -260,8 +266,8 @@ testParser programCode = (stack2Str stack, state2Str state)
 -- main = print(testAssembler [Push (-20),Tru,Tru,Neg,Equ] == ("False,-20",""))
 -- main = print(testAssembler [Push (-20),Push (-21), Le] == ("True",""))
 -- main = print(testAssembler [Push 5,Store "x",Push 1,Fetch "x",Sub,Store "x"] == ("","x=4"))
---main = print(testAssembler [Push 10,Store "i",Push 1,Store "fact",Loop [Push 1,Fetch "i",Equ,Neg] [Fetch "i",Fetch "fact",Mult,Store "fact",Push 1,Fetch "i",Sub,Store "i"]] == ("","fact=3628800,i=1"))
+-- main = print(testAssembler [Push 10,Store "i",Push 1,Store "fact",Loop [Push 1,Fetch "i",Equ,Neg] [Fetch "i",Fetch "fact",Mult,Store "fact",Push 1,Fetch "i",Sub,Store "i"]] )
 
 -- main = print(testAssembler [Push 1,Push 2,And])
 
-main = print(run ((compile [Assign "x" (Sum (Num 2) (Subt (Num 2) (Mul (Num 2) (Num 2))))]), createEmptyStack, createEmptyState))
+--main = print(run ((compile [Assign "x" (Sum (Num 2) (Subt (Num 2) (Mul (Num 2) (Num 2))))]), createEmptyStack, createEmptyState))
