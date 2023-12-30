@@ -212,12 +212,9 @@ compB (Not v) = compB v ++ [Neg]
 compile :: Program -> Code
 compile [] = []
 compile ((Assign var expr):stmts) = compA expr ++ [Store var] ++ compile stmts
-compile ((Seq stm1 stm2):stmts) = compile [stm1] ++ compile [stm2]
-compile ((If cond thenBody elseBody):stmts) = compB cond ++ compA thenBody ++ compB elseBody
-compile ((While cond body)) = compB cond ++ compA body
-
-
-
+compile ((Seq stm1 stm2):stmts) = compile [stm1] ++ compile [stm2] ++ compile stmts
+compile ((If cond thenBody elseBody):stmts) = compB cond ++ [Branch (compile [thenBody]) (compile [elseBody])] ++ compile stmts
+compile ((While cond thenBody):stmts) = [Loop (compB cond) (compile [thenBody])] ++ compile stmts
 
 -- parse :: String -> Program
 parse = undefined -- TODO
@@ -271,3 +268,12 @@ testParser programCode = (stack2Str stack, state2Str state)
 -- main = print(testAssembler [Push 1,Push 2,And])
 
 --main = print(run ((compile [Assign "x" (Sum (Num 2) (Subt (Num 2) (Mul (Num 2) (Num 2))))]), createEmptyStack, createEmptyState))
+
+[ Assign "i" (Num 10)                                               -- Assign 10 to variable i
+  , Assign "fact" (Num 1)                                             -- Assign 1 to variable fact
+  , While (NegInst (Eq (Var "i") (Num 1)))                       -- While not(i == 1)
+      (Seq
+        (AssignStm "fact" (Multiply (Var "fact") (Var "i")))            -- fact := fact * i
+        (AssignStm "i" (Subtract (Var "i") (Num 1)))                     -- i := i - 1
+      )
+  ]
