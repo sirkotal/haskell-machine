@@ -61,7 +61,8 @@ isEmpty (Stack _) = False
 
 The next step was to implement all remaining instructions that relied solely on the evaluation stack (```Add, Mult, Sub, Equ, Le, And, Neg```), alongside the ```createEmptyStack``` and ```stack2Str``` functions.
 We created seven different functions (one for each of the instructions listed above) that take a stack as an argument and return an updated stack, based on their respective operations. We also developed a ```valToString``` auxiliary function that returns a stack value in string format.
-Afterwards, we implemented the ```createEmptyStack``` and the ```stack2Str``` functions, the latter of which is a recursive function that translates the contents of the stack into a string; it handles three different situations:
+Afterwards, we implemented the ```createEmptyStack``` and the ```stack2Str``` functions; the former creates an empty stack and the latter is a recursive function that translates the contents of the stack into a string.
+```stack2Str``` handles three different situations:
 
 1. ***The stack is empty*** → The function returns an empty string, indicating that the stack has no elements left.
 2. ***The stack has one element*** → If the stack only has one element left (becomes empty after popping an element), the function converts the value of the top element to a string.
@@ -85,6 +86,26 @@ stack2Str s = if isEmpty s
                 valToString (top s) ++ "," ++ stack2Str (pop s)
 ```
 
+We then implemented the ```Fetch String``` and ```Store String``` instructions via the ```fetch``` and ```store``` functions - both of them take a string, a stack and a state as arguments, but while ```fetch``` returns an updated stack, ```store``` updates both the stack and the state, returning them in a pair.
+The ```fetch``` function is responsible for fetching a specific variable's value from the storage (state) and pushing it to the stack; if the variable isn't present in the storage, a runtime error message is displayed.
+Meanwhile, the ```store``` function is responsible for pairing a variable with the value at the top of the stack and storing it in the storage; if a variable-value pair already exists, it merely updates the pair's second element.
+
+The next step was to implement the ```createEmptyState``` and ```state2Str``` functions; the former creates an empty state and the latter translates the contents of the state into an alphabetically ordered string. To help with implementing ```state2Str```, we created the ```pairToStr``` function, which converts a ```(Var, Val)``` pair into a string by concatenating the variable with ```=``` and the value.
+The ```state2Str``` function itself firstly sorts the state by the first element of each pair (the variable's name) and then proceeds to apply the ```pairToStr``` function to every pair from the sorted list. The last step of the function is to combine the string representations of the sorted pairs into a single string, separated by commas.
+
+```haskell
+createEmptyState :: State
+createEmptyState = State []
+
+pairToStr :: (Var, Val) -> String
+pairToStr (var, val) = var ++ "=" ++ valToString val
+
+state2Str :: State -> String
+state2Str (State sta) = let sorted = sortBy (comparing fst) sta in 
+                        intercalate "," (map pairToStr sorted)
+```
+
+Finally, we created an auxiliary function ```execute```, which receives an instruction (```Inst```), a stack and a state as arguments and returns a ```(Stack, State)``` pair, to help us implement the ```run``` function. We took advantage of the implementation of ```execute``` to implement the ```Noop``` instruction, since it is only a dummy meant to return the input stack and store.
 ## Conclusions
 
 
