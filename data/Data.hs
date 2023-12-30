@@ -181,11 +181,13 @@ data Aexp = Num Integer
             | Mul Aexp Aexp deriving Show
 
 data Bexp = BoolVal Bool          
-            | Equal Aexp Aexp    
-            | Equi Bexp Bexp  -- Equal for Booleans maybe?
+            | Equal Exp Exp    
             | LeEq Aexp Aexp        
             | LogAnd Bexp Bexp 
             | Not Bexp deriving Show
+
+data Exp = A Aexp
+           | B Bexp deriving Show
 
 data Stm = Assign String Aexp          
             | Seq Stm Stm                
@@ -193,6 +195,10 @@ data Stm = Assign String Aexp
             | While Bexp Stm deriving Show
 
 type Program = [Stm]
+
+compVal :: Exp -> Code
+compVal (A n) = compA n
+compVal (B n) = compB n
 
 compA :: Aexp -> Code
 compA (Num n) = [Push n]
@@ -204,18 +210,17 @@ compA (Mul x y) = compA x ++ compA y ++ [Mult]
 compB :: Bexp -> Code   
 compB (BoolVal True) = [Tru] 
 compB (BoolVal False) = [Fals] 
-compB (Equal x y) = compA x ++ compA y ++ [Equ]
-compB (Equi x y) = compB x ++ compB y ++ [Equ]
+compB (Equal x y) = compVal x ++ compVal y ++ [Equ]
 compB (LeEq x y) = compA x ++ compA y ++ [Le]
 compB (LogAnd x y) = compB x ++ compB y ++ [And]
 compB (Not v) = compB v ++ [Neg]
 
 compile :: Program -> Code
 compile [] = []
-compile (Assign var expr : stmts) = compA expr ++ [Store var] ++ compile stmts  -- compA temporary just for arithmetic
-compile (Seq s : stmts) = compile s ++ compile stmts
-compile (If a b c : stmts) = compB a ++ [Branch (compile b) (compile c)] ++ compile stmts
-compile (While a b : stmts) = [Loop (compB a) (compile b)] ++ compile stmts
+compile (Assign var expr : stmts) = compA expr ++ [Store var] ++ compile stmts 
+-- compile (Seq s : stmts) = compile s ++ compile stmts
+-- compile (If a b c : stmts) = compB a ++ [Branch (compile b) (compile c)] ++ compile stmts
+-- compile (While a b : stmts) = [Loop (compB a) (compile b)] ++ compile stmts
 
 -- parse :: String -> Program
 parse = undefined -- TODO
