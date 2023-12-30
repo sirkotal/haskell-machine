@@ -3,6 +3,7 @@ import Data.Maybe (fromJust)
 import Data.List (intercalate, sortBy)
 import Data.Ord (comparing)
 import Data.Map (insert, fromList, toList)
+import Control.Exception (Exception, throwIO)
 
 -- Part 1
 
@@ -57,7 +58,7 @@ and (Stack (x : y : xs)) = case (valToString x, valToString y) of
                                     ("True", "False") -> push Ff (pop (pop (Stack (x : y : xs))))
                                     ("False", "True") -> push Ff (pop (pop (Stack (x : y : xs))))
                                     ("False", "False") -> push Ff (pop (pop (Stack (x : y : xs))))
-                                    _ -> error "Stack.and: need two booleans at the top of the stack"
+                                    _ -> error "Run-time error"   -- Stack.and: need two booleans at the top of the stack
 
 neg :: Stack -> Stack
 neg (Stack (x : xs)) = case valToString x of
@@ -103,7 +104,7 @@ createEmptyState = State []
 
 fetch :: String -> State -> Stack -> Stack
 fetch str (State sta) stk = case lookup str sta of
-                                      Nothing -> error "Variable was not found in storage"
+                                      Nothing -> error "Run-time error"  -- Variable was not found in storage
                                       Just val -> push val stk
 
 store :: String -> State -> Stack -> (Stack, State)
@@ -180,11 +181,13 @@ data Aexp = Num Integer
             | Mul Aexp Aexp deriving Show
 
 data Bexp = BoolVal Bool          
-            | Equal Aexp Aexp    
-            | Equi Bexp Bexp  -- Equal for Booleans maybe?
+            | Equal Exp Exp    
             | LeEq Aexp Aexp        
             | LogAnd Bexp Bexp 
             | Not Bexp deriving Show
+
+data Exp = A Aexp
+           | B Bexp deriving Show
 
 data Stm = Assign String Aexp          
             | Seq Stm Stm                
@@ -192,6 +195,10 @@ data Stm = Assign String Aexp
             | While Bexp Stm deriving Show
 
 type Program = [Stm]
+
+compVal :: Exp -> Code
+compVal (A n) = compA n
+compVal (B n) = compB n
 
 compA :: Aexp -> Code
 compA (Num n) = [Push n]
@@ -203,8 +210,7 @@ compA (Mul x y) = compA y ++ compA x ++ [Mult]
 compB :: Bexp -> Code   
 compB (BoolVal True) = [Tru] 
 compB (BoolVal False) = [Fals] 
-compB (Equal x y) = compA x ++ compA y ++ [Equ]
-compB (Equi x y) = compB x ++ compB y ++ [Equ]
+compB (Equal x y) = compVal x ++ compVal y ++ [Equ]
 compB (LeEq x y) = compA x ++ compA y ++ [Le]
 compB (LogAnd x y) = compB x ++ compB y ++ [And]
 compB (Not v) = compB v ++ [Neg]
@@ -215,6 +221,30 @@ compile ((Assign var expr):stmts) = compA expr ++ [Store var] ++ compile stmts
 compile ((Seq stm1 stm2):stmts) = compile [stm1] ++ compile [stm2] ++ compile stmts
 compile ((If cond thenBody elseBody):stmts) = compB cond ++ [Branch (compile [thenBody]) (compile [elseBody])] ++ compile stmts
 compile ((While cond thenBody):stmts) = [Loop (compB cond) (compile [thenBody])] ++ compile stmts
+
+data Token = TWhile 
+             | TAssign 
+             | TSemicolon
+             | TLPar
+             | TRPar
+             | TPlus
+             | TMinus
+             | TMult
+             | TComp
+             | TBoolComp deriving Show
+
+lexer :: String -> [Token]
+lexer [] = []
+lexer ('w':'h':'i':'l':'e':xs) = TWhile : lexer xs
+lexer (':':'=':xs) = TAssign : lexer xs
+lexer (';':xs) = TSemicolon : lexer xs
+lexer ('(':xs) = TLPar : lexer xs
+lexer (')':xs) = TRPar : lexer xs
+lexer ('+':xs) = TPlus : lexer xs
+lexer ('-':xs) = TMinus : lexer xs
+lexer ('*':xs) = TMult : lexer xs
+lexer ('=':xs) = TMinus : lexer xs
+lexer ('=':'=':xs) = TMult : lexer xs
 
 -- parse :: String -> Program
 parse = undefined -- TODO
@@ -266,14 +296,6 @@ testParser programCode = (stack2Str stack, state2Str state)
 -- main = print(testAssembler [Push 10,Store "i",Push 1,Store "fact",Loop [Push 1,Fetch "i",Equ,Neg] [Fetch "i",Fetch "fact",Mult,Store "fact",Push 1,Fetch "i",Sub,Store "i"]] )
 
 -- main = print(testAssembler [Push 1,Push 2,And])
+-- main = print(testAssembler [Tru,Tru,Store "y", Fetch "x",Tru])
 
 --main = print(run ((compile [Assign "x" (Sum (Num 2) (Subt (Num 2) (Mul (Num 2) (Num 2))))]), createEmptyStack, createEmptyState))
-
-[ Assign "i" (Num 10)                                               -- Assign 10 to variable i
-  , Assign "fact" (Num 1)                                             -- Assign 1 to variable fact
-  , While (NegInst (Eq (Var "i") (Num 1)))                       -- While not(i == 1)
-      (Seq
-        (AssignStm "fact" (Multiply (Var "fact") (Var "i")))            -- fact := fact * i
-        (AssignStm "i" (Subtract (Var "i") (Num 1)))                     -- i := i - 1
-      )
-  ]
