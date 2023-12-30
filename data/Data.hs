@@ -223,12 +223,24 @@ compile (Assign var expr : stmts) = compA expr ++ [Store var] ++ compile stmts
 -- compile (While a b : stmts) = [Loop (compB a) (compile [b])] ++ compile stmts
 
 data Token = TWhile 
-             | TAssign deriving Show
+             | TAssign 
+             | TSemicolon
+             | TLPar
+             | TRPar
+             | TPlus
+             | TMinus
+             | TMult deriving Show
 
 lexer :: String -> [Token]
 lexer [] = []
 lexer ('w':'h':'i':'l':'e' : xs) = TWhile : lexer xs
 lexer (':':'=' : xs) = TAssign : lexer xs
+lexer (';':xs) = TSemicolon : lexer xs
+lexer ('(':xs) = TLPar : lexer xs
+lexer (')':xs) = TRPar : lexer xs
+lexer ('+':xs) = TPlus : lexer xs
+lexer ('-':xs) = TMinus : lexer xs
+lexer ('*':xs) = TMult : lexer xs
 
 -- parse :: String -> Program
 parse = undefined -- TODO
