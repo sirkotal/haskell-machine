@@ -57,7 +57,7 @@ and (Stack (x : y : xs)) = case (valToString x, valToString y) of
                                     ("True", "False") -> push Ff (pop (pop (Stack (x : y : xs))))
                                     ("False", "True") -> push Ff (pop (pop (Stack (x : y : xs))))
                                     ("False", "False") -> push Ff (pop (pop (Stack (x : y : xs))))
-                                    _ -> error "Stack.and: need two booleans at the top of the stack"
+                                    _ -> error "Run-time error"   -- Stack.and: need two booleans at the top of the stack
 
 neg :: Stack -> Stack
 neg (Stack (x : xs)) = case valToString x of
@@ -103,7 +103,7 @@ createEmptyState = State []
 
 fetch :: String -> State -> Stack -> Stack
 fetch str (State sta) stk = case lookup str sta of
-                                      Nothing -> error "Variable was not found in storage"
+                                      Nothing -> error "Run-time error"  -- Variable was not found in storage
                                       Just val -> push val stk
 
 store :: String -> State -> Stack -> (Stack, State)
@@ -263,5 +263,6 @@ testParser programCode = (stack2Str stack, state2Str state)
 --main = print(testAssembler [Push 10,Store "i",Push 1,Store "fact",Loop [Push 1,Fetch "i",Equ,Neg] [Fetch "i",Fetch "fact",Mult,Store "fact",Push 1,Fetch "i",Sub,Store "i"]] == ("","fact=3628800,i=1"))
 
 -- main = print(testAssembler [Push 1,Push 2,And])
+-- main = print(testAssembler [Tru,Tru,Store "y", Fetch "x",Tru])
 
 main = print(run ((compile [Assign "x" (Sum (Num 2) (Subt (Num 2) (Mul (Num 2) (Num 2))))]), createEmptyStack, createEmptyState))
