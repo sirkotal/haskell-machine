@@ -229,18 +229,22 @@ data Token = TWhile
              | TRPar
              | TPlus
              | TMinus
-             | TMult deriving Show
+             | TMult
+             | TComp
+             | TBoolComp deriving Show
 
 lexer :: String -> [Token]
 lexer [] = []
-lexer ('w':'h':'i':'l':'e' : xs) = TWhile : lexer xs
-lexer (':':'=' : xs) = TAssign : lexer xs
+lexer ('w':'h':'i':'l':'e':xs) = TWhile : lexer xs
+lexer (':':'=':xs) = TAssign : lexer xs
 lexer (';':xs) = TSemicolon : lexer xs
 lexer ('(':xs) = TLPar : lexer xs
 lexer (')':xs) = TRPar : lexer xs
 lexer ('+':xs) = TPlus : lexer xs
 lexer ('-':xs) = TMinus : lexer xs
 lexer ('*':xs) = TMult : lexer xs
+lexer ('=':xs) = TMinus : lexer xs
+lexer ('=':'=':xs) = TMult : lexer xs
 
 -- parse :: String -> Program
 parse = undefined -- TODO
