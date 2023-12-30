@@ -218,9 +218,17 @@ compB (Not v) = compB v ++ [Neg]
 compile :: Program -> Code
 compile [] = []
 compile (Assign var expr : stmts) = compA expr ++ [Store var] ++ compile stmts 
--- compile (Seq s : stmts) = compile s ++ compile stmts
--- compile (If a b c : stmts) = compB a ++ [Branch (compile b) (compile c)] ++ compile stmts
--- compile (While a b : stmts) = [Loop (compB a) (compile b)] ++ compile stmts
+-- compile (Seq s1 s2 : stmts) = compile s ++ compile stmts
+-- compile (If a b c : stmts) = compB a ++ [Branch (compile [b]) (compile [c])] ++ compile stmts
+-- compile (While a b : stmts) = [Loop (compB a) (compile [b])] ++ compile stmts
+
+data Token = TWhile 
+             | TAssign deriving Show
+
+lexer :: String -> [Token]
+lexer [] = []
+lexer ('w':'h':'i':'l':'e' : xs) = TWhile : lexer xs
+lexer (':':'=' : xs) = TAssign : lexer xs
 
 -- parse :: String -> Program
 parse = undefined -- TODO
