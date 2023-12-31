@@ -145,7 +145,12 @@ The second part of the project consisted in defining a translation (a compiler) 
 
 ## Conclusions
 
+We managed to successfully implement the low-level machine and the compiler in GHCi ≥9.0.0.
 
+One of the main issues we faced while developing this project was the amount of time it took to implement the parser, since we had no previous contact with this type of program in any class.
+At times, it was also hard to understand what was asked of us in the project's specification.
+
+All in all, however, this project allowed us to consolidate our Haskell knowledge.
 
 ## Bibliography
 
