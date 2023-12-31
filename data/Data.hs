@@ -1,9 +1,13 @@
 -- PFL 2023/24 - Haskell practical assignment quickstart
 import Data.Maybe (fromJust)
-import Data.List (intercalate, sortBy)
+import Data.List (intercalate, sortBy, break)
 import Data.Ord (comparing)
 import Data.Map (insert, fromList, toList)
+import Data.Char (digitToInt, isDigit, isAlpha)
+import Text.Read (reads)
 import Control.Exception (Exception, throwIO)
+
+
 
 -- Part 1
 
@@ -223,6 +227,9 @@ compile ((If cond thenBody elseBody):stmts) = compB cond ++ [Branch (compile [th
 compile ((While cond thenBody):stmts) = [Loop (compB cond) (compile [thenBody])] ++ compile stmts
 
 data Token = TWhile 
+             | TIf
+             | TNot
+             | TDo
              | TAssign 
              | TSemicolon
              | TLPar
@@ -231,11 +238,15 @@ data Token = TWhile
              | TMinus
              | TMult
              | TComp
-             | TBoolComp deriving Show
+             | TBoolComp
+             | TLe deriving Show
 
 lexer :: String -> [Token]
 lexer [] = []
 lexer ('w':'h':'i':'l':'e':xs) = TWhile : lexer xs
+lexer ('i':'f':xs) = TIf : lexer xs
+lexer ('n':'o':'t':xs) = TNot : lexer xs
+lexer ('d':'o':xs) = TDo : lexer xs
 lexer (':':'=':xs) = TAssign : lexer xs
 lexer (';':xs) = TSemicolon : lexer xs
 lexer ('(':xs) = TLPar : lexer xs
@@ -243,16 +254,65 @@ lexer (')':xs) = TRPar : lexer xs
 lexer ('+':xs) = TPlus : lexer xs
 lexer ('-':xs) = TMinus : lexer xs
 lexer ('*':xs) = TMult : lexer xs
-lexer ('=':xs) = TMinus : lexer xs
-lexer ('=':'=':xs) = TMult : lexer xs
+lexer ('=':xs) = TBoolComp : lexer xs
+lexer ('=':'=':xs) = TComp : lexer xs
+lexer ('<':'=':xs) = TLe : lexer xs
 
--- parse :: String -> Program
-parse = undefined -- TODO
+helper :: [Stm] -> Stm
+helper [stmt] = stmt
+
+--parse :: String -> Program
+--parse "" = []
+--parse (var:':':'='value:xs) = [Assign parse ]
+
+
+--parse (var:' ':':':'=':' ':num:';':' ':xs) = [Assign [var] (Num (toInteger (digitToInt num)))] ++ parse xs   
+--parse ('i':'f':' ':condition:' ':'t':'h':'e':'n':' ':thenBody::xs) = [If (BoolVal True) (helper(parse [thenBody])) (helper(parse [elseBody]))] ++ parse xs
+--parse ('i':'f':' ':'(':condition:')':' ':'(':thenBody:')':' ':'(':elseBody:')':xs) = [If (BoolVal True) (helper(parse [thenBody])) (helper(parse [elseBody]))] ++ parse xs
+--parse x = error ("Invalid syntax" ++ x)
+
+--(helper2(parse [condition]))
+--parseBexp :: String -> Bexp
+ 
+
+--parse ('i':'f':' ':'(':condition:')':' ':'(':thenBody:')':' ':'(':elseBody:')':xs) = [If (parse condition) (parse thenBody) (parse elseBody)] ++ parse xs
+
+
+
+isNumber :: String -> Bool
+isNumber input = case reads input :: [(Double, String)] of
+  [(_, "")] -> True
+  _         -> False
+
+splitAround :: Eq a => a -> [a] -> Maybe ([a], [a])
+splitAround x xs = case break (== x) xs of
+    (_, [])     -> Nothing   -- x not found
+    (before, after) -> Just (before, tail after)
+
+parseAexp :: String -> Aexp
+parseAexp input = case splitAround '+' input of
+                      Just (before, after) -> 
+                          Sum (parseAexp (filter (/= ' ') before)) (parseAexp (filter (/= ' ') after))
+                      Nothing ->
+                          case splitAround '-' input of
+                              Just (before, after) ->
+                                  Subt (parseAexp (filter (/= ' ') before)) (parseAexp (filter (/= ' ') after))
+                              Nothing ->
+                                  case splitAround '*' input of
+                                      Just (before, after) ->
+                                          Mul (parseAexp (filter (/= ' ') before)) (parseAexp (filter (/= ' ') after))
+                                      Nothing ->
+                                          if (isNumber input)
+                                            then Num (toInteger (read input))
+                                          else
+                                            Var input
+
+
 
 -- To help you test your parser
-testParser :: String -> (String, String)
-testParser programCode = (stack2Str stack, state2Str state)
-  where (_,stack,state) = run(compile (parse programCode), createEmptyStack, createEmptyState)
+--testParser :: String -> (String, String)
+--testParser programCode = (stack2Str stack, state2Str state)
+--  where (_,stack,state) = run(compile (parse programCode), createEmptyStack, createEmptyState)
 
 -- Examples:
 -- testParser "x := 5; x := x - 1;" == ("","x=4")
