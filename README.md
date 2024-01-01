@@ -143,6 +143,18 @@ run (inst : rest, stk, sta) = case inst of
 
 The second part of the project consisted in defining a translation (a compiler) from a small imperative programming language (with arithmetic and boolean expressions, statements consisting of assignments of the form ```x := a```, sequences of statements ```(instr1 ; instr2)```, ```if...then...else``` statements and ```while``` loops) into lists of instructions in the previous machine.
 
+The first step was to define three data types in Haskell to represent the expressions and statements of this imperative language: ```Aexp``` (arithmetic expressions), ```Bexp``` (boolean expressions) and ```Stm``` (statements).
+
+-> Description of the data types implementation + code <-
+
+We then implemented the ```compile``` function - a compiler from a program in this small imperative language into a list of machine instructions (as defined in Part 1 of the project). Alongside the main compiler function, we were also required to develop two additional auxiliary functions which compile arithmetic and boolean expressions: ```compA``` and ```compB```, respectively.
+
+-> Description of the compiler implementation + code <-
+
+Finally, the last thing we had to implement was a parser function (```parser```) that transforms an imperative program (represented as a string) into its corresponding representation in the ```Stm``` data type (a list of ```Stm``` statements).
+
+-> Description of the parser implementation + code <-
+
 ## Conclusions
 
 We managed to successfully implement the low-level machine and the compiler in GHCi ≥9.0.0.
@@ -163,3 +175,4 @@ All in all, however, this project allowed us to consolidate our Haskell knowledg
 - <https://typeclasses.com/>
 - <https://en.wikibooks.org/wiki/Haskell>
 - <https://www.haskelltutorials.com/guides/haskell-lists-ultimate-guide.html>
+- <https://youtu.be/dDtZLm7HIJs>
