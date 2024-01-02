@@ -173,6 +173,22 @@ We then implemented the ```compile``` function - a compiler from a program in th
 To facilitate the realization of the intended code and manage potential recursion, we opted to construct multiple versions of the different statements that could be present in the ```Program``` input.
 
 ```haskell
+compA :: Aexp -> Code
+compA (Num n) = [Push n]
+compA (Var x) = [Fetch x]
+compA (Sum x y) = compA y ++ compA x ++ [Add]  
+compA (Subt x y) = compA y ++ compA x ++ [Sub] 
+compA (Mul x y) = compA y ++ compA x ++ [Mult] 
+
+compB :: Bexp -> Code   
+compB (BoolVal True) = [Tru] 
+compB (BoolVal False) = [Fals] 
+compB (Equal x y) = compA y ++ compA x ++ [Equ]
+compB (EqualBool x y) = compB y ++ compB x ++ [Equ]
+compB (LeEq x y) = compA y ++ compA x ++ [Le]
+compB (LogAnd x y) = compB y ++ compB x ++ [And]
+compB (Not v) = compB v ++ [Neg]
+
 compile :: Program -> Code
 compile [] = []
 compile ((Assign var expr):stmts) = compA expr ++ [Store var] ++ compile stmts
@@ -182,7 +198,7 @@ compile ((While cond thenBody):stmts) = [Loop (compB cond) (compile [thenBody])]
 
 Finally, the last thing we had to implement was a parser function (```parser```) that transforms an imperative program (represented as a string) into its corresponding representation in the ```Stm``` data type (a list of ```Stm``` statements).
 
-With the help of the library ```parsec``` we developed individual parsers for each type of element in the inputs. Firstly we had a parser for statements such as ifs, whiles or assigns, and, based on our previously defined data types, parse each part of it with the help of some extra functions. We have one group that focus on parsing arithmetic expressions and another for boolean expressions. In the end gathering each part we get a program for compiler.
+Using the parsec library, we created distinct parsers for various elements in the input. Initially, we developed a parser for statements like ifs, whiles, or assigns. Leveraging predefined data types, we further parsed each component using additional functions. Additionally, we formed separate groups dedicated to parsing arithmetic and boolean expressions. Finally, by assembling these parsed components, we constructed a compiler program.
 
 ```haskell
 parse :: String -> [Stm]
