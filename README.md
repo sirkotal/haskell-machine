@@ -145,11 +145,40 @@ The second part of the project consisted in defining a translation (a compiler) 
 
 The first step was to define three data types in Haskell to represent the expressions and statements of this imperative language: ```Aexp``` (arithmetic expressions), ```Bexp``` (boolean expressions) and ```Stm``` (statements).
 
--> Description of the data types implementation + code <-
+```haskell
+data Aexp = Num Integer    
+            | Var String          
+            | Sum Aexp Aexp         
+            | Subt Aexp Aexp           
+            | Mul Aexp Aexp deriving Show
 
-We then implemented the ```compile``` function - a compiler from a program in this small imperative language into a list of machine instructions (as defined in Part 1 of the project). Alongside the main compiler function, we were also required to develop two additional auxiliary functions which compile arithmetic and boolean expressions: ```compA``` and ```compB```, respectively.
+data Bexp = BoolVal Bool          
+            | Equal Aexp Aexp 
+            | EqualBool Bexp Bexp   
+            | LeEq Aexp Aexp        
+            | LogAnd Bexp Bexp 
+            | Not Bexp deriving Show
 
--> Description of the compiler implementation + code <-
+data Stm = Assign String Aexp          
+            | Seq Stm Stm                
+            | If Bexp Stm Stm            
+            | While Bexp Stm deriving Show
+
+type Program = [Stm]
+```
+
+We then implemented the ```compile``` function - a compiler from a program in this small imperative language into a list of machine instructions (as defined in Part 1 of the project). Alongside the main compiler function, we were also required to develop two additional auxiliary functions which compile arithmetic and boolean expressions: ```compA``` and 
+```compB```, respectively.
+
+To facilitate the realization of the intended code and manage potential recursion, we opted to construct multiple versions of the different statements that could be present in the ```Program``` input.
+
+```haskell
+compile :: Program -> Code
+compile [] = []
+compile ((Assign var expr):stmts) = compA expr ++ [Store var] ++ compile stmts
+compile ((If cond thenBody elseBody):stmts) = compB cond ++ [Branch (compile [thenBody]) (compile [elseBody])] ++ compile stmts
+compile ((While cond thenBody):stmts) = [Loop (compB cond) (compile [thenBody])] ++ compile stmts
+```
 
 Finally, the last thing we had to implement was a parser function (```parser```) that transforms an imperative program (represented as a string) into its corresponding representation in the ```Stm``` data type (a list of ```Stm``` statements).
 
