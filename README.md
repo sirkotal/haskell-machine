@@ -182,7 +182,20 @@ compile ((While cond thenBody):stmts) = [Loop (compB cond) (compile [thenBody])]
 
 Finally, the last thing we had to implement was a parser function (```parser```) that transforms an imperative program (represented as a string) into its corresponding representation in the ```Stm``` data type (a list of ```Stm``` statements).
 
--> Description of the parser implementation + code <-
+With the help of the library ```parsec``` we developed individual parsers for each type of element in the inputs. Firstly we had a parser for statements such as ifs, whiles or assigns, and, based on our previously defined data types, parse each part of it with the help of some extra functions. We have one group that focus on parsing arithmetic expressions and another for boolean expressions. In the end gathering each part we get a program for compiler.
+
+```haskell
+parse :: String -> [Stm]
+parse input = case parseHelper input of
+    Left _         -> []
+    Right statements -> statements
+
+parseHelper :: String -> Either ParseError [Stm]
+parseHelper = P.parse sequenceParser ""
+
+sequenceParser :: Parser [Stm]
+sequenceParser = spaces *> many (try ifParser <|> try assignParser <|> whileParser <* optional (char ';'))
+```
 
 ## Conclusions
 
