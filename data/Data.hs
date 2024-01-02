@@ -6,6 +6,9 @@ import Data.Map (insert, fromList, toList)
 import Data.Char (digitToInt, isDigit, isAlpha)
 import Text.Read (reads)
 import Control.Exception (Exception, throwIO)
+import Text.Parsec hiding (parse, State)
+import qualified Text.Parsec as P
+import Text.Parsec.String (Parser)
 
 
 
@@ -167,6 +170,11 @@ testAssembler code = (stack2Str stack, state2Str state)
 -- testAssembler [Push 5,Store "x",Push 1,Fetch "x",Sub,Store "x"] == ("","x=4")
 -- testAssembler [Push 10,Store "i",Push 1,Store "fact",Loop [Push 1,Fetch "i",Equ,Neg] [Fetch "i",Fetch "fact",Mult,Store "fact",Push 1,Fetch "i",Sub,Store "i"]] == ("","fact=3628800,i=1")
 
+
+-- testAssembler [Push 42,Store "x", Push 43, Fetch "x", Le]
+--[Push 42,Store "x",Fetch "x",Push 43,Le,Branch [Push 1,Store "x"] [Push 33,Store "x"],Push 1,Fetch "x",Add,Store "x"]
+
+
 -- If you test:
 -- testAssembler [Push 1,Push 2,And]
 -- You should get an exception with the string: "Run-time error"
@@ -185,7 +193,8 @@ data Aexp = Num Integer
             | Mul Aexp Aexp deriving Show
 
 data Bexp = BoolVal Bool          
-            | Equal Exp Exp    
+            | Equal Aexp Aexp 
+            | EqualBool Bexp Bexp   
             | LeEq Aexp Aexp        
             | LogAnd Bexp Bexp 
             | Not Bexp deriving Show
@@ -214,9 +223,10 @@ compA (Mul x y) = compA y ++ compA x ++ [Mult]
 compB :: Bexp -> Code   
 compB (BoolVal True) = [Tru] 
 compB (BoolVal False) = [Fals] 
-compB (Equal x y) = compVal x ++ compVal y ++ [Equ]
-compB (LeEq x y) = compA x ++ compA y ++ [Le]
-compB (LogAnd x y) = compB x ++ compB y ++ [And]
+compB (Equal x y) = compA y ++ compA x ++ [Equ]
+compB (EqualBool x y) = compB y ++ compB x ++ [Equ]
+compB (LeEq x y) = compA y ++ compA x ++ [Le]
+compB (LogAnd x y) = compB y ++ compB x ++ [And]
 compB (Not v) = compB v ++ [Neg]
 
 compile :: Program -> Code
@@ -226,93 +236,162 @@ compile ((Seq stm1 stm2):stmts) = compile [stm1] ++ compile [stm2] ++ compile st
 compile ((If cond thenBody elseBody):stmts) = compB cond ++ [Branch (compile [thenBody]) (compile [elseBody])] ++ compile stmts
 compile ((While cond thenBody):stmts) = [Loop (compB cond) (compile [thenBody])] ++ compile stmts
 
-data Token = TWhile 
-             | TIf
-             | TNot
-             | TDo
-             | TAssign 
-             | TSemicolon
-             | TLPar
-             | TRPar
-             | TPlus
-             | TMinus
-             | TMult
-             | TComp
-             | TBoolComp
-             | TLe deriving Show
+parse :: String -> [Stm]
+parse input = case parseHelper input of
+    Left _         -> []
+    Right statements -> statements
 
-lexer :: String -> [Token]
-lexer [] = []
-lexer ('w':'h':'i':'l':'e':xs) = TWhile : lexer xs
-lexer ('i':'f':xs) = TIf : lexer xs
-lexer ('n':'o':'t':xs) = TNot : lexer xs
-lexer ('d':'o':xs) = TDo : lexer xs
-lexer (':':'=':xs) = TAssign : lexer xs
-lexer (';':xs) = TSemicolon : lexer xs
-lexer ('(':xs) = TLPar : lexer xs
-lexer (')':xs) = TRPar : lexer xs
-lexer ('+':xs) = TPlus : lexer xs
-lexer ('-':xs) = TMinus : lexer xs
-lexer ('*':xs) = TMult : lexer xs
-lexer ('=':xs) = TBoolComp : lexer xs
-lexer ('=':'=':xs) = TComp : lexer xs
-lexer ('<':'=':xs) = TLe : lexer xs
+parseHelper :: String -> Either ParseError [Stm]
+parseHelper = P.parse sequenceParser ""
 
-helper :: [Stm] -> Stm
-helper [stmt] = stmt
+assignParser :: Parser Stm
+assignParser = do
+        optional (char '(')
+        var <- many1 letter <* spaces
+        string ":=" <* spaces
+        value <- aexpParser <* char ';' <* spaces
+        optional (char ')')
+        return $ Assign var value
 
---parse :: String -> Program
---parse "" = []
---parse (var:':':'='value:xs) = [Assign parse ]
+ifParser :: Parser Stm
+ifParser = do
+    spaces
+    optional (char '(') <* spaces
+    string "if" <* spaces
+    optional (char '(') <* spaces
+    cond <- bexpParser <* spaces
+    optional (char ')') <* spaces
+    string "then" <* spaces
+    optional (char '(') <* spaces
+    thenBody <- stmParser <* spaces
+    optional (char ')') <* spaces
+    optional (char '(') <* spaces
+    string "else" <* spaces
+    elseBody <- stmParser
+    optional (char ')') <* spaces
+    optional (char ')') <* spaces
+    spaces
+    return $ If cond thenBody elseBody
 
+whileParser :: Parser Stm
+whileParser = do
+  spaces
+  optional (char '(') <* spaces
+  string "while" <* spaces
+  optional (char '(') <* spaces
+  cond <- bexpParser <* spaces
+  optional (char ')') <* spaces
+  string "do" <* spaces
+  optional (char '(') <* spaces
+  body <- stmParser
+  optional (char ')') <* spaces
+  optional (char ')') <* spaces
+  spaces
+  return $ While cond body
 
---parse (var:' ':':':'=':' ':num:';':' ':xs) = [Assign [var] (Num (toInteger (digitToInt num)))] ++ parse xs   
---parse ('i':'f':' ':condition:' ':'t':'h':'e':'n':' ':thenBody::xs) = [If (BoolVal True) (helper(parse [thenBody])) (helper(parse [elseBody]))] ++ parse xs
---parse ('i':'f':' ':'(':condition:')':' ':'(':thenBody:')':' ':'(':elseBody:')':xs) = [If (BoolVal True) (helper(parse [thenBody])) (helper(parse [elseBody]))] ++ parse xs
---parse x = error ("Invalid syntax" ++ x)
+stmParser :: Parser Stm
+stmParser = try ifParser <|> try whileParser <|> assignParser
 
---(helper2(parse [condition]))
---parseBexp :: String -> Bexp
- 
+sequenceParser :: Parser [Stm]
+sequenceParser = spaces *> many (try ifParser <|> try assignParser <|> whileParser <* optional (char ';'))
 
---parse ('i':'f':' ':'(':condition:')':' ':'(':thenBody:')':' ':'(':elseBody:')':xs) = [If (parse condition) (parse thenBody) (parse elseBody)] ++ parse xs
+aexpParser :: Parser Aexp
+aexpParser = spaces *> chainl1 term addOp
 
+term :: Parser Aexp
+term = chainl1 factor mulOp
 
+factor :: Parser Aexp
+factor = try (Num <$> (read <$> many1 digit)) <* spaces
+      <|> try (Var <$> many1 letter) <*spaces
+      <|> parens aexpParser <* spaces
 
-isNumber :: String -> Bool
-isNumber input = case reads input :: [(Double, String)] of
-  [(_, "")] -> True
-  _         -> False
+addOp :: Parser (Aexp -> Aexp -> Aexp)
+addOp = do
+  spaces
+  op <- try (char '+') <|> char '-'
+  spaces
+  return $ if op == '+' then Sum else Subt
 
-splitAround :: Eq a => a -> [a] -> Maybe ([a], [a])
-splitAround x xs = case break (== x) xs of
-    (_, [])     -> Nothing   -- x not found
-    (before, after) -> Just (before, tail after)
+mulOp :: Parser (Aexp -> Aexp -> Aexp)
+mulOp = do
+  spaces
+  char '*'
+  spaces
+  return Mul
 
-parseAexp :: String -> Aexp
-parseAexp input = case splitAround '+' input of
-                      Just (before, after) -> 
-                          Sum (parseAexp (filter (/= ' ') before)) (parseAexp (filter (/= ' ') after))
-                      Nothing ->
-                          case splitAround '-' input of
-                              Just (before, after) ->
-                                  Subt (parseAexp (filter (/= ' ') before)) (parseAexp (filter (/= ' ') after))
-                              Nothing ->
-                                  case splitAround '*' input of
-                                      Just (before, after) ->
-                                          Mul (parseAexp (filter (/= ' ') before)) (parseAexp (filter (/= ' ') after))
-                                      Nothing ->
-                                          if (isNumber input)
-                                            then Num (toInteger (read input))
-                                          else
-                                            Var input
+parens :: Parser a -> Parser a
+parens p = char '(' *> spaces *> p <* spaces <* char ')'
+
+bexpParser :: Parser Bexp
+bexpParser = try equalParser <|> try boolValParser <|> try leEqParser <|> notParser
+
+-- try logAndParser <|> try equalBoolParser <|>
+
+boolValParser :: Parser Bexp
+boolValParser = do
+  value <- (try (string "true" >> return True) <|> (string "false" >> return False))
+  return (BoolVal value)
+
+equalBoolParser :: Parser Bexp
+equalBoolParser = do
+  spaces
+  x <- bexpParser
+  spaces
+  string "="
+  spaces
+  y <- bexpParser
+  return (EqualBool x y)
+
+equalParser :: Parser Bexp
+equalParser = do
+  spaces
+  x <- aexpParser
+  spaces
+  string "=="
+  spaces
+  y <- aexpParser
+  return (Equal x y)
+
+leEqParser :: Parser Bexp
+leEqParser = do
+  spaces
+  x <- aexpParser
+  spaces
+  string "<="
+  spaces
+  y <- aexpParser
+  return (LeEq x y)
+
+logAndParser :: Parser Bexp
+logAndParser = do
+  spaces
+  x <- bexpParser
+  spaces
+  string "and"
+  spaces
+  y <- bexpParser
+  return (LogAnd x y)
+
+notParser :: Parser Bexp
+notParser = do
+  spaces
+  string "not"
+  spaces
+  string "("
+  spaces
+  v <- bexpParser
+  spaces
+  string ")"
+  spaces
+  return (Not v)
 
 
 
 -- To help you test your parser
---testParser :: String -> (String, String)
---testParser programCode = (stack2Str stack, state2Str state)
---  where (_,stack,state) = run(compile (parse programCode), createEmptyStack, createEmptyState)
+testParser :: String -> (String, String)
+testParser programCode = (stack2Str stack, state2Str state)
+  where (_,stack,state) = run(compile (parse programCode), createEmptyStack, createEmptyState)
 
 -- Examples:
 -- testParser "x := 5; x := x - 1;" == ("","x=4")
@@ -359,3 +438,12 @@ parseAexp input = case splitAround '+' input of
 -- main = print(testAssembler [Tru,Tru,Store "y", Fetch "x",Tru])
 
 --main = print(run ((compile [Assign "x" (Sum (Num 2) (Subt (Num 2) (Mul (Num 2) (Num 2))))]), createEmptyStack, createEmptyState))
+
+main :: IO ()
+main = do
+    let input = "x := 42; if x <= 43 then x := 1; else x := 33; x := x+1;"
+    let statements = parse input
+    putStrLn "Parsed Statements:"
+    print statements
+
+    

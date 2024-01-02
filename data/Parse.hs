@@ -23,7 +23,8 @@ data Aexp = Num Integer
             | Mul Aexp Aexp deriving Show
 
 data Bexp = BoolVal Bool          
-            | Equal Exp Exp    
+            | Equal Aexp Aexp 
+            | EqualBool Bexp Bexp   
             | LeEq Aexp Aexp        
             | LogAnd Bexp Bexp 
             | Not Bexp deriving Show
@@ -52,7 +53,8 @@ compA (Mul x y) = compA y ++ compA x ++ [Mult]
 compB :: Bexp -> Code   
 compB (BoolVal True) = [Tru] 
 compB (BoolVal False) = [Fals] 
-compB (Equal x y) = compVal x ++ compVal y ++ [Equ]
+compB (Equal x y) = compA x ++ compA y ++ [Equ]
+compB (EqualBool x y) = compB x ++ compB y ++ [Equ]
 compB (LeEq x y) = compA x ++ compA y ++ [Le]
 compB (LogAnd x y) = compB x ++ compB y ++ [And]
 compB (Not v) = compB v ++ [Neg]
@@ -67,10 +69,12 @@ compile ((While cond thenBody):stmts) = [Loop (compB cond) (compile [thenBody])]
 
 assignParser :: Parser Stm
 assignParser = do
-            var <- many1 letter <* spaces
-            string ":=" <* spaces
-            value <- manyTill anyChar (char ';')
-            return $ Assign var (parseAexp (value))
+        optional (char '(')
+        var <- many1 letter <* spaces
+        string ":=" <* spaces
+        value <- aexpParser <* char ';' <* spaces
+        optional (char ')')
+        return $ Assign var value
 
 --seqParser :: Parser Stm
 --seqParser = do
@@ -82,21 +86,37 @@ assignParser = do
 ifParser :: Parser Stm
 ifParser = do
     spaces
+    optional (char '(') <* spaces
     string "if" <* spaces
-    cond <- boolParser <* spaces
+    optional (char '(') <* spaces
+    cond <- bexpParser <* spaces
+    optional (char ')') <* spaces
     string "then" <* spaces
-    thenBody <- assignParser <* spaces
+    optional (char '(') <* spaces
+    thenBody <- stmParser <* spaces
+    optional (char ')') <* spaces
+    optional (char '(') <* spaces
     string "else" <* spaces
-    elseBody <- assignParser
+    elseBody <- stmParser
+    optional (char ')') <* spaces
+    optional (char ')') <* spaces
+    spaces
     return $ If cond thenBody elseBody
 
 whileParser :: Parser Stm
 whileParser = do
   spaces
+  optional (char '(') <* spaces
   string "while" <* spaces
-  cond <- boolParser <* spaces
+  optional (char '(') <* spaces
+  cond <- bexpParser <* spaces
+  optional (char ')') <* spaces
   string "do" <* spaces
-  body <- assignParser
+  optional (char '(') <* spaces
+  body <- stmParser
+  optional (char ')') <* spaces
+  optional (char ')') <* spaces
+  spaces
   return $ While cond body
 
 boolParser :: Parser Bexp
@@ -104,39 +124,102 @@ boolParser = do
   value <- string "true" <|> string "false"
   return $ BoolVal (value == "true")
 
-allParser :: Parser Stm
-allParser = try assignParser <|> try ifParser <|> whileParser
+stmParser :: Parser Stm
+stmParser = try ifParser <|> try whileParser <|> assignParser
 
 sequenceParser :: Parser [Stm]
-sequenceParser = many (try ifParser <|> assignParser <|> whileParser <* optional (char ';')) <* spaces
+sequenceParser = spaces *> many (try ifParser <|> try assignParser <|> whileParser <* optional (char ';'))
 
-isNumber :: String -> Bool
-isNumber input = case reads input :: [(Double, String)] of
-  [(_, "")] -> True
-  _         -> False
+aexpParser :: Parser Aexp
+aexpParser = spaces *> chainl1 term addOp
 
-splitAround :: Eq a => a -> [a] -> Maybe ([a], [a])
-splitAround x xs = case break (== x) xs of
-    (_, [])     -> Nothing   -- x not found
-    (before, after) -> Just (before, tail after)
+term :: Parser Aexp
+term = chainl1 factor mulOp
 
-parseAexp :: String -> Aexp
-parseAexp input = case splitAround '+' input of
-                      Just (before, after) -> 
-                          Sum (parseAexp (filter (/= ' ') before)) (parseAexp (filter (/= ' ') after))
-                      Nothing ->
-                          case splitAround '-' input of
-                              Just (before, after) ->
-                                  Subt (parseAexp (filter (/= ' ') before)) (parseAexp (filter (/= ' ') after))
-                              Nothing ->
-                                  case splitAround '*' input of
-                                      Just (before, after) ->
-                                          Mul (parseAexp (filter (/= ' ') before)) (parseAexp (filter (/= ' ') after))
-                                      Nothing ->
-                                          if (isNumber input)
-                                            then Num (toInteger (read input))
-                                          else
-                                            Var input
+factor :: Parser Aexp
+factor = try (Num <$> (read <$> many1 digit)) <* spaces
+      <|> try (Var <$> many1 letter) <*spaces
+      <|> parens aexpParser <* spaces
+
+addOp :: Parser (Aexp -> Aexp -> Aexp)
+addOp = do
+  spaces
+  op <- try (char '+') <|> char '-'
+  spaces
+  return $ if op == '+' then Sum else Subt
+
+mulOp :: Parser (Aexp -> Aexp -> Aexp)
+mulOp = do
+  spaces
+  char '*'
+  spaces
+  return Mul
+
+parens :: Parser a -> Parser a
+parens p = char '(' *> spaces *> p <* spaces <* char ')'
+
+bexpParser :: Parser Bexp
+bexpParser = try equalParser <|> try boolValParser <|> try leEqParser <|> notParser
+
+-- try logAndParser <|> try equalBoolParser <|>
+
+boolValParser :: Parser Bexp
+boolValParser = do
+  value <- (try (string "true" >> return True) <|> (string "false" >> return False))
+  return (BoolVal value)
+
+equalBoolParser :: Parser Bexp
+equalBoolParser = do
+  spaces
+  x <- bexpParser
+  spaces
+  string "="
+  spaces
+  y <- bexpParser
+  return (EqualBool x y)
+
+equalParser :: Parser Bexp
+equalParser = do
+  spaces
+  x <- aexpParser
+  spaces
+  string "=="
+  spaces
+  y <- aexpParser
+  return (Equal x y)
+
+leEqParser :: Parser Bexp
+leEqParser = do
+  spaces
+  x <- aexpParser
+  spaces
+  string "<="
+  spaces
+  y <- aexpParser
+  return (LeEq x y)
+
+logAndParser :: Parser Bexp
+logAndParser = do
+  spaces
+  x <- bexpParser
+  spaces
+  string "and"
+  spaces
+  y <- bexpParser
+  return (LogAnd x y)
+
+notParser :: Parser Bexp
+notParser = do
+  spaces
+  string "not"
+  spaces
+  string "("
+  spaces
+  v <- bexpParser
+  spaces
+  string ")"
+  spaces
+  return (Not v)
 
 testParser :: String -> Either ParseError Stm
 testParser = parse ifParser ""
@@ -152,7 +235,12 @@ testParser = parse ifParser ""
 testSequenceParser :: String -> Either ParseError [Stm]
 testSequenceParser = parse sequenceParser ""
 
+test :: String -> [Stm]
+test input = case testSequenceParser input of
+    Left _         -> []  -- Handle parsing error as needed
+    Right statements -> statements
+
 main :: IO ()
 main = do
-  let result = testSequenceParser "x:=1; if true then x:=1; else x:=2; while true do y:=3;"
+  let result = test "while x <= 10 do x := x + 1"
   print result
