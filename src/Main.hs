@@ -333,6 +333,9 @@ bexpParser = try logAndParser <|> try equalBoolParser <|> try equalParser <|> tr
 bexpSimpleParser :: Parser Bexp
 bexpSimpleParser = try equalParser <|> try boolValParser <|> try leEqParser <|> notParser
 
+bexpSimpleParserB :: Parser Bexp
+bexpSimpleParserB = try equalBoolParser <|> try equalParser <|> try boolValParser <|> try leEqParser <|> notParser
+
 boolValParser :: Parser Bexp
 boolValParser = do
   spaces
@@ -383,11 +386,16 @@ leEqParser = do
 logAndParser :: Parser Bexp
 logAndParser = do
   spaces
-  x <- bexpSimpleParser
+  optional (string "(")
+  spaces
+  x <- bexpSimpleParserB
   spaces
   string "and"
   spaces
-  y <- bexpSimpleParser
+  y <- bexpSimpleParserB
+  spaces
+  optional (string ")")
+  spaces
   return (LogAnd x y)
 
 notParser :: Parser Bexp
