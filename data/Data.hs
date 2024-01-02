@@ -25,6 +25,7 @@ data SVal = Integer Integer
           | Tt
           | Ff deriving Show
 
+-- Converts a stack value into a string.
 valToString :: SVal -> String
 valToString (Integer x) = show x
 valToString Tt = "True"
@@ -36,29 +37,36 @@ type Var = String
 type Val = SVal
 data State = State [(Var, Val)] deriving Show
 
+-- Pushes a value into the stack; returns the updated stack.
 push :: SVal -> Stack -> Stack
 push x (Stack xs) = Stack (x:xs)
 
+-- Pops the value on the top of the stack; returns the updated stack.
 pop :: Stack -> Stack
 pop (Stack (_:xs)) = Stack xs
 pop _ = error "Stack.pop: empty stack"
 
+-- Returns the value on the top of the stack.
 top :: Stack -> SVal
 top (Stack (x:_)) = x
 top _ = error "Stack.top: empty stack"
 
+-- Performs an addition operation between the two values at the top of the stack; both values must be integers. It returns the updated stack.
 add :: Stack -> Stack
 add (Stack (Integer x : Integer y : xs)) = push (Integer (x + y)) (pop (pop (Stack (Integer x : Integer y : xs))))
 add _ = error "Stack.add: need two integers at the top of the stack"
 
+-- Performs a subtraction operation between the two values at the top of the stack; both values must be integers. It returns the updated stack.
 sub :: Stack -> Stack
 sub (Stack (Integer x : Integer y : xs)) = push (Integer (x - y)) (pop (pop (Stack (Integer x : Integer y : xs))))
 sub _ = error "Stack.sub: need two integers at the top of the stack"
 
+-- Performs a multiplication operation between the two values at the top of the stack; both values must be integers. It returns the updated stack.
 mul :: Stack -> Stack
 mul (Stack (Integer x : Integer y : xs)) = push (Integer (x * y)) (pop (pop (Stack (Integer x : Integer y : xs))))
 mul _ = error "Stack.mul: need two integers at the top of the stack"
 
+-- Performs a logical AND operation between the two values at the top of the stack; both values must be booleans. It returns the updated stack.
 and :: Stack -> Stack
 and (Stack (x : y : xs)) = case (valToString x, valToString y) of
                                     ("True", "True") -> push Tt (pop (pop (Stack (x : y : xs))))
@@ -67,12 +75,14 @@ and (Stack (x : y : xs)) = case (valToString x, valToString y) of
                                     ("False", "False") -> push Ff (pop (pop (Stack (x : y : xs))))
                                     _ -> error "Run-time error"   -- Stack.and: need two booleans at the top of the stack
 
+-- Performs a logical negation operation on the value at the top of the stack; the value must be a boolean. It returns the updated stack.
 neg :: Stack -> Stack
 neg (Stack (x : xs)) = case valToString x of
                                     ("True") -> push Ff (pop (Stack (x : xs)))
                                     ("False") -> push Tt (pop (Stack (x : xs)))
                                     _ -> error "Stack.neg: need a boolean at the top of the stack"
 
+-- Performs a comparison between the two values at the top of the stack to check if they are the same; both values must be of the same data type. It returns the updated stack.
 eq :: Stack -> Stack
 eq (Stack (x : y : xs)) = case (x, y) of
                             (Integer x, Integer y) -> if (x == y)
@@ -85,48 +95,58 @@ eq (Stack (x : y : xs)) = case (x, y) of
                             (Ff, Tt) -> push Ff (pop (pop (Stack (x : y : xs))))
                             _ -> error "Stack.le: need two values of the same type at the top of the stack"
 
+-- Performs a comparison between the two values at the top of the stack to check if the first one (the topmost) is less or equal in value to the second one; both values must be integers. It returns the updated stack.
 le :: Stack -> Stack
 le (Stack (Integer x : Integer y : xs)) = case x <= y of
                                       True -> push Tt (pop (pop (Stack (Integer x : Integer y : xs))))
                                       False -> push Ff (pop (pop (Stack (Integer x : Integer y : xs))))
 le _ = error "Stack.le: need two integers at the top of the stack"
 
+-- Checks if the stack is empty.
 isEmpty :: Stack -> Bool
 isEmpty (Stack [])= True
 isEmpty (Stack _) = False
 
+-- Creates an empty stack.
 createEmptyStack :: Stack
 createEmptyStack = Stack []
 
+-- Converts the stack into a string.
 stack2Str :: Stack -> String
 stack2Str s = if isEmpty s
                 then ""
-              else if isEmpty (pop s)
+              else if isEmpty (pop s)              {- if the stack only has 1 element left -}
                 then valToString (top s)
               else
                 valToString (top s) ++ "," ++ stack2Str (pop s)
 
+-- Creates an empty state.
 createEmptyState :: State
 createEmptyState = State []
 
+-- Fetches a specific variable's value from the state and pushes it into the stack; returns the updated stack.
 fetch :: String -> State -> Stack -> Stack
 fetch str (State sta) stk = case lookup str sta of
                                       Nothing -> error "Run-time error"  -- Variable was not found in storage
                                       Just val -> push val stk
 
+-- Stores a pair made of the variable passed as an argument and the value at the top of the stack into the state; returns a pair with the stack and the state - both updated.
 store :: String -> State -> Stack -> (Stack, State)
 store str (State sta) stk = if isEmpty stk
                                 then error "Stack is empty"
                             else
                                 (pop stk, State (toList (insert str (top stk) (fromList sta))))
 
+-- Converts the state's variable-value pair into a string.
 pairToStr :: (Var, Val) -> String
 pairToStr (var, val) = var ++ "=" ++ valToString val
 
+-- Converts the machine's state into a string.
 state2Str :: State -> String
 state2Str (State sta) = let sorted = sortBy (comparing fst) sta in 
                         intercalate "," (map pairToStr sorted)
 
+-- Executes a specific instruction using the specified stack and state; returns the updated stack and state in the form of a pair.
 execute :: Inst -> Stack -> State -> (Stack, State)
 execute (Push n) stk sta = (push (Integer n) stk, sta)
 execute Add stk sta = (add stk, sta) 
@@ -142,6 +162,7 @@ execute (Fetch s) stk sta = ((fetch s sta stk), sta)
 execute (Store s) stk sta = store s sta stk
 execute Noop stk sta = (stk, sta) 
 
+-- Runs the list of instructions on the specified stack and state; returns a tuple consisting of the code list, a stack and a state.
 run :: (Code, Stack, State) -> (Code, Stack, State)
 run ([], stk, sta) = ([], stk, sta)
 run (inst : rest, stk, sta) = case inst of
@@ -400,47 +421,4 @@ testParser programCode = (stack2Str stack, state2Str state)
 -- testParser "if (1 == 0+1 = 2+1 == 3) then x := 1; else x := 2;" == ("","x=1")
 -- testParser "if (1 == 0+1 = (2+1 == 4)) then x := 1; else x := 2;" == ("","x=2")
 -- testParser "x := 2; y := (x - 3)*(4 + 2*3); z := x +x*(2);" == ("","x=2,y=-10,z=6")
--- testParser "i := 10; fact := 1; while (not(i == 1)) do (fact := fact * i; i := i - 1;);" == ("","fact=3628800,i=1")
 
-
-
--- main = print(push (Integer 3) (pop (Stack [(Integer 1),(Integer 2)])))
--- main = print(top (Stack [(Integer 1),(Integer 2)]))
--- main = print(push Tt (createEmptyStack))
--- main = print(isEmpty (createEmptyStack))
--- main = print(stack2Str (Stack [(Integer 1),(Integer 2)]))
--- main = print(stack2Str (push Tt (push (Integer 4) createEmptyStack)))
-
--- main = print(sub (push (Integer 5) (push (Integer 4) createEmptyStack)))
--- main = print(Main.and (push Tt (push Ff createEmptyStack)))
--- main = print(neg (push Ff (push Ff createEmptyStack)))
-
--- main = print(eq (push Tt (push (Integer 4) createEmptyStack)))
--- main = print(le (push (Integer 5) (push (Integer 4) createEmptyStack)))
-
--- main = print(fetch "x" (State [("x",(Integer 3))]) (Stack [(Integer 1),(Integer 2)]))
--- main = print(store "x" (State [("y", (Integer 4))]) (Stack [(Integer 1),(Integer 2)]))
--- main = print(state2Str (State [("x",(Integer 3)), ("y", (Integer 4)), ("z", Tt)]))
-
--- main = print(run ([Push 10, Push 4, Push 3, Sub, Mult], createEmptyStack, createEmptyState))
-
--- main = print (testAssembler [Push 10,Push 4,Push 3,Sub,Mult] == ("-10",""))
--- main = print(testAssembler [Fals,Push 3,Tru,Store "var",Store "a", Store "someVar"] == ("","a=3,someVar=False,var=True"))
--- main = print(testAssembler [Fals,Store "var",Fetch "var"] == ("False","var=False"))
--- main = print(testAssembler [Push (-20),Tru,Fals] == ("False,True,-20",""))
--- main = print(testAssembler [Push (-20),Tru,Tru,Neg] == ("False,True,-20",""))
--- main = print(testAssembler [Push (-20),Tru,Tru,Neg,Equ] == ("False,-20",""))
--- main = print(testAssembler [Push (-20),Push (-21), Le] == ("True",""))
--- main = print(testAssembler [Push 5,Store "x",Push 1,Fetch "x",Sub,Store "x"] == ("","x=4"))
--- main = print(testAssembler [Push 10,Store "i",Push 1,Store "fact",Loop [Push 1,Fetch "i",Equ,Neg] [Fetch "i",Fetch "fact",Mult,Store "fact",Push 1,Fetch "i",Sub,Store "i"]] )
-
--- main = print(testAssembler [Push 1,Push 2,And])
--- main = print(testAssembler [Tru,Tru,Store "y", Fetch "x",Tru])
-
---main = print(run ((compile [Assign "x" (Sum (Num 2) (Subt (Num 2) (Mul (Num 2) (Num 2))))]), createEmptyStack, createEmptyState))
-
-main :: IO ()
-main = do
-    let input = "x := 44; if x <= 43 then x := 1; else x := 33; y := x*2;"
-    let statements = parse input
-    print statements
