@@ -199,19 +199,12 @@ data Bexp = BoolVal Bool
             | LogAnd Bexp Bexp 
             | Not Bexp deriving Show
 
-data Exp = A Aexp
-           | B Bexp deriving Show
-
 data Stm = Assign String Aexp          
             | Seq Stm Stm                
             | If Bexp Stm Stm            
             | While Bexp Stm deriving Show
 
 type Program = [Stm]
-
-compVal :: Exp -> Code
-compVal (A n) = compA n
-compVal (B n) = compB n
 
 compA :: Aexp -> Code
 compA (Num n) = [Push n]
@@ -246,46 +239,46 @@ parseHelper = P.parse sequenceParser ""
 
 assignParser :: Parser Stm
 assignParser = do
-        optional (char '(')
+        spaces
         var <- many1 letter <* spaces
         string ":=" <* spaces
         value <- aexpParser <* char ';' <* spaces
-        optional (char ')')
         return $ Assign var value
+
+seqParser :: Parser Stm
+seqParser = do
+    spaces
+    (char '(') <* spaces
+    c1 <- stmParser <* spaces
+    remaining <- optionMaybe (spaces *> stmParser <* spaces)
+    (char ')') <* spaces
+    case remaining of
+        Just c2 -> return $ Seq c1 c2
+        Nothing -> return c1
 
 ifParser :: Parser Stm
 ifParser = do
     spaces
-    optional (char '(') <* spaces
     string "if" <* spaces
     optional (char '(') <* spaces
     cond <- bexpParser <* spaces
     optional (char ')') <* spaces
     string "then" <* spaces
-    optional (char '(') <* spaces
-    thenBody <- stmParser <* spaces
-    optional (char ')') <* spaces
-    optional (char '(') <* spaces
+    thenBody <- try seqParser <|> stmParser <* spaces
     string "else" <* spaces
-    elseBody <- stmParser
-    optional (char ')') <* spaces
-    optional (char ')') <* spaces
+    elseBody <- try seqParser <|> stmParser
     spaces
     return $ If cond thenBody elseBody
 
 whileParser :: Parser Stm
 whileParser = do
   spaces
-  optional (char '(') <* spaces
   string "while" <* spaces
   optional (char '(') <* spaces
   cond <- bexpParser <* spaces
   optional (char ')') <* spaces
   string "do" <* spaces
-  optional (char '(') <* spaces
-  body <- stmParser
-  optional (char ')') <* spaces
-  optional (char ')') <* spaces
+  body <- try seqParser <|> stmParser
   spaces
   return $ While cond body
 
@@ -324,23 +317,25 @@ parens :: Parser a -> Parser a
 parens p = char '(' *> spaces *> p <* spaces <* char ')'
 
 bexpParser :: Parser Bexp
-bexpParser = try equalParser <|> try boolValParser <|> try leEqParser <|> notParser
+bexpParser = try logAndParser <|> try equalBoolParser <|> try equalParser <|> try boolValParser <|> try leEqParser <|> notParser
 
--- try logAndParser <|> try equalBoolParser <|>
+bexpSimpleParser = try equalParser <|> try boolValParser <|> try leEqParser <|> notParser
 
 boolValParser :: Parser Bexp
 boolValParser = do
-  value <- (try (string "true" >> return True) <|> (string "false" >> return False))
+  spaces
+  value <- (try (string "True" >> return True) <|> (string "False" >> return False))
+  spaces
   return (BoolVal value)
 
 equalBoolParser :: Parser Bexp
 equalBoolParser = do
   spaces
-  x <- bexpParser
+  x <- bexpSimpleParser
   spaces
   string "="
   spaces
-  y <- bexpParser
+  y <- bexpSimpleParser
   return (EqualBool x y)
 
 equalParser :: Parser Bexp
@@ -366,11 +361,11 @@ leEqParser = do
 logAndParser :: Parser Bexp
 logAndParser = do
   spaces
-  x <- bexpParser
+  x <- bexpSimpleParser
   spaces
   string "and"
   spaces
-  y <- bexpParser
+  y <- bexpSimpleParser
   return (LogAnd x y)
 
 notParser :: Parser Bexp
@@ -380,7 +375,7 @@ notParser = do
   spaces
   string "("
   spaces
-  v <- bexpParser
+  v <- bexpSimpleParser
   spaces
   string ")"
   spaces
@@ -395,12 +390,17 @@ testParser programCode = (stack2Str stack, state2Str state)
 
 -- Examples:
 -- testParser "x := 5; x := x - 1;" == ("","x=4")
--- testParser "if (not True and 2 <= 5 = 3 == 4) then x :=1 else y := 2" == ("","y=2")
--- testParser "x := 42; if x <= 43 then x := 1; else (x := 33; x := x+1;)" == ("","x=1")
+-- testParser "x := 0 - 2;" == ("","x=-2")
+-- testParser "if (not True and 2 <= 5 = 3 == 4) then x :=1; else y := 2;" == ("","y=2")
+-- testParser "x := 42; if x <= 43 then x := 1; else (x := 33; x := x+1;);" == ("","x=1")
 -- testParser "x := 42; if x <= 43 then x := 1; else x := 33; x := x+1;" == ("","x=2")
 -- testParser "x := 42; if x <= 43 then x := 1; else x := 33; x := x+1; z := x+x;" == ("","x=2,z=4")
+-- testParser "x := 44; if x <= 43 then x := 1; else (x := 33; x := x+1;); y := x*2;" == ("","x=34,y=68")
+-- testParser "x := 42; if x <= 43 then (x := 33; x := x+1;) else x := 1;" == ("","x=34")
+-- testParser "if (1 == 0+1 = 2+1 == 3) then x := 1; else x := 2;" == ("","x=1")
+-- testParser "if (1 == 0+1 = (2+1 == 4)) then x := 1; else x := 2;" == ("","x=2")
 -- testParser "x := 2; y := (x - 3)*(4 + 2*3); z := x +x*(2);" == ("","x=2,y=-10,z=6")
--- testParser "i := 10; fact := 1; while (not(i == 1)) do (fact := fact * i; i := i - 1;);" == ("","fact=3628800,i=1")~
+-- testParser "i := 10; fact := 1; while (not(i == 1)) do (fact := fact * i; i := i - 1;);" == ("","fact=3628800,i=1")
 
 
 
@@ -441,9 +441,6 @@ testParser programCode = (stack2Str stack, state2Str state)
 
 main :: IO ()
 main = do
-    let input = "x := 42; if x <= 43 then x := 1; else x := 33; x := x+1;"
+    let input = "x := 44; if x <= 43 then x := 1; else x := 33; y := x*2;"
     let statements = parse input
-    putStrLn "Parsed Statements:"
     print statements
-
-    
